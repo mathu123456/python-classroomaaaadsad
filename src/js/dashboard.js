@@ -76,7 +76,14 @@ export const ESTADOS_ENTREGA = {
   returned: {
     texto: 'Calificado',
     tono: 'ok',
-    ayuda: 'Tiene nota y tu profesor te lo devolvió para que lo corrijas.'
+    /*
+     * "Devuelto" NO reabre la entrega para editarla -sigue siendo un estado
+     * cerrado, igual que "graded"-: es solo la marca que usa el profesor
+     * para decir "ya te lo entregué de vuelta calificado", no una invitación
+     * a corregirlo. Si el profesor quiere que el estudiante lo corrija de
+     * verdad, existe un botón aparte ("Reabrir para el estudiante").
+     */
+    ayuda: 'Ya tiene nota y comentarios; tu profesor lo marcó como devuelto.'
   },
   abandoned: {
     texto: 'Abandonado',
@@ -174,10 +181,15 @@ function kpi(o) {
  * que dejo a medias. Ordenados por urgencia real (lo que cierra antes primero).
  */
 async function pendientesDelEstudiante() {
-  const [ejercicios, mias] = await Promise.all([
+  const [ejercicios, mias, retos] = await Promise.all([
     window.pc.exercises.list(),
-    window.pc.submissions.mine()
+    window.pc.submissions.mine(),
+    window.pc.challenges.list()
   ]);
+  // El ejercicio que enlaza un reto (challenges.exerciseId) tiene su propia
+  // tarjeta en "🔥 Retos" (src/js/exercises.js): sin este filtro aparecía
+  // TAMBIÉN aquí, como si fuera una tarea de temario normal pendiente.
+  const idsDeRetos = new Set(retos.map((r) => r.exerciseId).filter(Boolean));
 
   const ultima = new Map();
   for (const s of mias) {
@@ -188,6 +200,7 @@ async function pendientesDelEstudiante() {
   const ahora = Date.now();
   const lista = [];
   for (const ej of ejercicios) {
+    if (idsDeRetos.has(ej.id)) continue;
     const s = ultima.get(ej.id);
     const entregado = s && ['submitted', 'under_review', 'late', 'graded', 'returned'].indexOf(s.status) !== -1;
     if (entregado) continue;
@@ -212,6 +225,44 @@ async function pendientesDelEstudiante() {
     if (a.empezado !== b.empezado) return a.empezado ? -1 : 1;   // lo empezado, antes
     return a.titulo.localeCompare(b.titulo, 'es');
   });
+}
+
+/*
+ * "Mis clases": hasta ahora el estudiante no tenia ningun sitio donde ver su
+ * horario -ni la clase activa, ni lo que viene programado, ni lo que acaba
+ * de cerrar-. Sin ninguna clase en el curso, la seccion ni se pinta -mismo
+ * criterio que la vitrina de insignias-, para no dejar una caja vacia
+ * permanente en un curso que todavia no usa clases.
+ */
+const ETIQUETA_CLASE = {
+  active: ['En curso', 'ok'],
+  scheduled: ['Programada', ''],
+  closed: ['Finalizada', '']
+};
+
+function seccionMisClases(clases) {
+  if (!clases.length) return null;
+
+  const section = el('div', null,
+    el('div', { class: 'section-head' },
+      el('h2', null, 'Mis clases'), el('span', { class: 'count' }, String(clases.length))));
+
+  const card = el('div', { class: 'card' });
+  for (const c of clases) {
+    const [etiqueta, tono] = ETIQUETA_CLASE[c.status] || ['', ''];
+    card.append(el('div', { class: 'list-row' },
+      el('span', { class: 'sb-dot', style: { background: c.activa ? 'var(--ok)' : 'var(--text-faint)' } }),
+      el('div', { class: 'lr-main' },
+        el('b', null, c.title),
+        el('span', null, [
+          c.tema,
+          c.startTime ? (c.status === 'scheduled' ? 'empieza ' : 'abrió ') + formatoFecha(c.startTime) : null,
+          c.endTime ? (c.status === 'closed' ? 'cerró ' : 'termina ') + formatoFecha(c.endTime) : null
+        ].filter(Boolean).join('  ·  '))),
+      el('span', { class: 'chip ' + tono }, etiqueta)));
+  }
+  section.append(card);
+  return section;
 }
 
 /* =========================================================== estudiante */
@@ -304,6 +355,10 @@ async function inicioEstudiante(host, usuario) {
     }
     page.append(card);
   }
+
+  const misClases = await window.pc.classes.mine();
+  const seccionClases = seccionMisClases(misClases);
+  if (seccionClases) page.append(seccionClases);
 
   if (p.porTema.length) {
     page.append(el('div', { class: 'section-head' },

@@ -338,6 +338,35 @@
 .pkg-detail .kv dt { color: var(--text-faint); font-size: 11px; }
 .pkg-detail .kv dd { color: var(--text); font-size: 11.5px; word-break: break-word; }
 
+/*
+ * pip no da un porcentaje real de avance (ver electron/ipc/packages.js), así
+ * que la franja sigue siendo a propósito indeterminada -una que va y viene-,
+ * no una barra con un valor inventado. pip-status sí es texto real, sacado
+ * por src/js/packages.js de las propias líneas de log de pip (paquete que
+ * resuelve, archivo que descarga y su tamaño, cuántos instala al final).
+ */
+.pip-status {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.pip-progress-indet {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+.pip-progress-bar {
+  height: 100%;
+  width: 40%;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: pip-progress-slide 1.1s ease-in-out infinite;
+}
+@keyframes pip-progress-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+
 .pip-log {
   font-family: var(--font-code);
   font-size: 11px;

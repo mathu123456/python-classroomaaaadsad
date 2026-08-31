@@ -192,8 +192,11 @@ async function pintarEjercicios(host) {
   host.append(el('div', { class: 'section-head' },
     el('h2', null, 'Ejercicios'), el('span', { class: 'count' }, ejercicios.length),
     el('span', { class: 'spacer' }),
-    el('button', { class: 'btn sm outline', disabled: !temas.length, onclick: () => subirEjercicio(temas) },
-      icon('download', 12), 'Subir archivos'),
+    el('button', {
+      class: 'btn sm outline', disabled: !temas.length,
+      title: temas.length ? '' : 'Primero crea al menos un tema',
+      onclick: () => subirEjercicio(temas)
+    }, icon('upload', 12), 'Subir archivos'),
     el('button', {
       class: 'btn sm primary', disabled: !temas.length,
       title: temas.length ? '' : 'Primero crea al menos un tema',
@@ -263,6 +266,54 @@ async function borrarEjercicio(ej) {
   if (hooks.refrescar) await hooks.refrescar();
 }
 
+/*
+ * Antes esta sección era puro texto de solo lectura: no había ningún botón,
+ * input[type=file] ni drag&drop, así que era físicamente imposible añadir,
+ * reemplazar o quitar un archivo desde este modal -el texto "o subirlos
+ * desde tu equipo" prometía algo que no existía-. Reutiliza el mismo
+ * diálogo nativo que ya funciona en subirEjercicio() (fs:openFilesDialog).
+ */
+function campoArchivos(archivos) {
+  const lista = el('div', { class: 'form-note' });
+  const contenedor = el('div', { class: 'form-field' },
+    el('label', null, 'Archivos del ejercicio'),
+    lista,
+    el('div', { style: { display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' } },
+      el('button', {
+        class: 'btn sm outline', type: 'button',
+        onclick: async () => {
+          try {
+            const nuevos = await window.pc.files.openFilesDialog();
+            if (nuevos && nuevos.length) { archivos.push(...nuevos); pintar(); }
+          } catch (err) {
+            // Antes un archivo binario o de más de 8MB fallaba en silencio:
+            // ni toast, ni mensaje, indistinguible de un botón roto.
+            toast(err.message || 'No se pudo leer ese archivo.', { title: 'Subir archivos', type: 'err', timeout: 7000 });
+          }
+        }
+      }, icon('upload', 12), 'Subir archivos')));
+
+  function pintar() {
+    clear(lista);
+    if (!archivos.length) {
+      lista.append('Sin archivos adicionales. Puedes crearlo desde cero o subirlos desde tu equipo.');
+      return;
+    }
+    for (let i = 0; i < archivos.length; i++) {
+      const idx = i;
+      lista.append(el('span', {
+        class: 'chip', style: { marginRight: '4px', marginBottom: '4px', display: 'inline-flex', gap: '4px', alignItems: 'center' }
+      }, archivos[idx].name,
+      el('button', {
+        class: 'icon-btn', type: 'button', title: 'Quitar', style: { width: '16px', height: '16px' },
+        onclick: () => { archivos.splice(idx, 1); pintar(); }
+      }, icon('close', 10))));
+    }
+  }
+  pintar();
+  return contenedor;
+}
+
 async function ejercicioModal(ej, temas, archivosIniciales) {
   const form = el('form', { class: 'form-grid', novalidate: true });
   const archivos = Array.isArray(archivosIniciales)
@@ -287,6 +338,29 @@ async function ejercicioModal(ej, temas, archivosIniciales) {
     temas.map((t) => el('option', { value: t.id, selected: ej && ej.topicId === t.id }, t.nombre)));
   const selTipo = el('select', { class: 'select', name: 'type' },
     Object.entries(TIPO_ETIQUETA).map(([v, t]) => el('option', { value: v, selected: ej ? ej.type === v : v === 'normal' }, t)));
+  const inputTiempo = el('input', {
+    class: 'input', name: 'timeLimit', type: 'number', min: '0', max: '600', value: ej ? ej.timeLimit : '0'
+  });
+  /*
+   * "Tipo: Cronometrado" no activa ningún cronómetro por sí solo -el que de
+   * verdad corre en la sesión del estudiante depende únicamente del campo
+   * "Tiempo (min)", un control totalmente aparte-. Sin este aviso, un
+   * profesor podía elegir "Cronometrado" con Tiempo=0 y no pasaba nada
+   * visible, o al revés: poner Tiempo=30 con Tipo="Normal" y sí correr un
+   * cronómetro real sin que el selector lo dijera.
+   */
+  const avisoTipo = el('small', { style: { fontSize: '10.5px', color: 'var(--warn)' } });
+  function actualizarAvisoTipo() {
+    const esCronometrado = selTipo.value === 'timed';
+    const conTiempo = Number(inputTiempo.value) > 0;
+    avisoTipo.textContent = esCronometrado && !conTiempo
+      ? 'El cronómetro real depende del campo "Tiempo (min)" de abajo: en 0, no habrá ningún límite aunque el tipo diga "Cronometrado".'
+      : (!esCronometrado && conTiempo
+        ? 'Con "Tiempo (min)" mayor que 0 sí correrá un cronómetro real, aunque el tipo no sea "Cronometrado".'
+        : '');
+  }
+  selTipo.addEventListener('change', actualizarAvisoTipo);
+  inputTiempo.addEventListener('input', actualizarAvisoTipo);
   const selDif = el('select', { class: 'select', name: 'difficulty' },
     Object.entries(DIFICULTAD).map(([v, t]) =>
       el('option', { value: v, selected: ej ? ej.difficulty === v : v === 'easy' }, '★'.repeat(ESTRELLAS[v]) + ' ' + t)));
@@ -324,15 +398,14 @@ async function ejercicioModal(ej, temas, archivosIniciales) {
       el('textarea', { class: 'textarea', name: 'instructions', rows: '5' }, ej ? ej.instructions : '')),
     el('div', { class: 'ex-form-grid' },
       campoBox('topicId', 'Tema', selTema),
-      campoBox('type', 'Tipo', selTipo),
+      (() => { const c = campoBox('type', 'Tipo', selTipo); c.append(avisoTipo); return c; })(),
       campoBox('difficulty', 'Dificultad', selDif),
       campoBox('status', 'Estado', selEstado)),
     el('div', { class: 'ex-form-grid' },
       campoBox('xp', 'XP', el('input', { class: 'input', name: 'xp', type: 'number', min: '0', value: ej ? ej.xp : '10' })),
       campoBox('maxScore', 'Nota máxima',
         el('input', { class: 'input', name: 'maxScore', type: 'number', step: '0.1', min: '0.1', value: ej ? ej.maxScore : '5' })),
-      campoBox('timeLimit', 'Tiempo (min)',
-        el('input', { class: 'input', name: 'timeLimit', type: 'number', min: '0', max: '600', value: ej ? ej.timeLimit : '0' }), '0 = sin límite'),
+      campoBox('timeLimit', 'Tiempo (min)', inputTiempo, '0 = sin límite'),
       campoBox('maxAttempts', 'Intentos',
         el('input', { class: 'input', name: 'maxAttempts', type: 'number', min: '0', max: '99', value: ej ? ej.maxAttempts : '0' }), '0 = ilimitados')),
     el('div', { class: 'ex-form-grid' },
@@ -345,12 +418,7 @@ async function ejercicioModal(ej, temas, archivosIniciales) {
         class: 'textarea', name: 'starterCode', rows: '4', spellcheck: 'false',
         style: { fontFamily: 'var(--font-code)' }
       }, ej ? ej.starterCode : '')),
-    el('div', { class: 'form-field' },
-      el('label', null, 'Archivos del ejercicio'),
-      el('div', { class: 'form-note' }, archivos.length
-        ? archivos.map((file) => file.name).join(', ')
-        : 'Sin archivos adicionales. Puedes crearlo desde cero o subirlos desde tu equipo.'),
-      archivos.length ? el('small', null, 'Se entregarán como archivos iniciales al estudiante.') : null),
+    campoArchivos(archivos),
     el('div', { class: 'form-field' },
       el('label', null, 'Criterios de evaluación'), critHost,
       el('div', { style: { display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' } },
@@ -410,6 +478,7 @@ async function ejercicioModal(ej, temas, archivosIniciales) {
   if (ej && ej.rubric && ej.rubric.length) ej.rubric.forEach(addCriterio);
   form.querySelector('input[name="maxScore"]').addEventListener('input', actualizarSuma);
   actualizarSuma();
+  actualizarAvisoTipo();
 
   const res = await modal({
     title: ej ? 'Editar ejercicio' : 'Nuevo ejercicio', body: form, wide: true,
@@ -446,7 +515,15 @@ async function ejercicioModal(ej, temas, archivosIniciales) {
 }
 
 async function subirEjercicio(temas) {
-  const archivos = await window.pc.files.openFilesDialog();
+  let archivos;
+  try {
+    archivos = await window.pc.files.openFilesDialog();
+  } catch (err) {
+    // Antes un archivo binario o de más de 8MB fallaba en silencio: no
+    // pasaba absolutamente nada visible, indistinguible de un botón roto.
+    toast(err.message || 'No se pudo leer ese archivo.', { title: 'Subir archivos', type: 'err', timeout: 7000 });
+    return;
+  }
   if (!archivos || !archivos.length) return;
   await ejercicioModal(null, temas, archivos);
 }
@@ -484,8 +561,15 @@ async function pintarClases(host) {
       el('div', { class: 'lr-main' },
         el('b', null, c.title),
         el('span', null, c.tema + '  ·  ' + c.ejercicios.length + ' ejercicio(s)' +
-          (c.startTime ? '  ·  abierta ' + formatoFecha(c.startTime) : '') +
-          (c.endTime ? '  ·  cerrada ' + formatoFecha(c.endTime) : ''))),
+          /*
+           * Antes de poder programar un horario, startTime SOLO se ponia al
+           * pulsar "Abrir clase" -asi que decir siempre "abierta" era
+           * correcto-. Ahora tambien puede ser una hora futura que el
+           * profesor fijo de antemano y que todavia no llego: para esa,
+           * "abierta" mentiria (la clase no se ha abierto todavia).
+           */
+          (c.startTime ? '  ·  ' + (c.status === 'scheduled' ? 'empieza ' : 'abierta ') + formatoFecha(c.startTime) : '') +
+          (c.endTime ? '  ·  ' + (c.status === 'closed' ? 'cerrada ' : 'termina ') + formatoFecha(c.endTime) : ''))),
       el('span', { class: 'chip ' + (c.activa ? 'ok' : c.status === 'closed' ? 'err' : '') },
         c.activa ? 'ACTIVA' : c.status === 'closed' ? 'Finalizada' : 'Programada'),
       el('div', { class: 'lr-actions' },
@@ -548,6 +632,21 @@ async function claseModal(c, ejercicios, temas) {
     el('div', { class: 'ex-form-grid' },
       campoBox('topicId', 'Tema', selTema),
       campoBox('onClosePolicy', 'Al cerrar la clase', selPolitica)),
+    /*
+     * Horario opcional: antes el ÚNICO modo de fijar startTime/endTime era
+     * pulsar Abrir/Cerrar clase en el momento (cambiarClase -> setClassStatus),
+     * que autoasigna "ahora" si todavia no tenia hora. Con estos dos campos el
+     * profesor puede programarlo de antemano; dejarlos vacios no cambia nada
+     * de ese comportamiento -saveClass ya conserva la hora previa (o ninguna)
+     * cuando llega vacio, ver academic.saveClass-.
+     */
+    el('div', { class: 'ex-form-grid' },
+      campoBox('startTime', 'Empieza (opcional)',
+        el('input', { class: 'input', name: 'startTime', type: 'datetime-local', value: c ? fechaInput(c.startTime) : '' }),
+        'Vacío: se marca sola al pulsar «Abrir clase».'),
+      campoBox('endTime', 'Termina (opcional)',
+        el('input', { class: 'input', name: 'endTime', type: 'datetime-local', value: c ? fechaInput(c.endTime) : '' }),
+        'Vacío: se marca sola al pulsar «Cerrar clase».')),
     el('div', { class: 'form-field' },
       el('label', null, 'Ejercicios de esta clase'),
       ejercicios.length ? lista : el('div', { class: 'empty-note' }, 'Crea ejercicios primero.')));
@@ -559,6 +658,8 @@ async function claseModal(c, ejercicios, temas) {
   if (res !== 'ok') return;
   const datos = leerForm(form);
   datos.exerciseIds = Array.from(seleccion);
+  datos.startTime = datos.startTime ? new Date(datos.startTime).toISOString() : null;
+  datos.endTime = datos.endTime ? new Date(datos.endTime).toISOString() : null;
   if (c) datos.id = c.id;
   const out = await window.pc.classes.save(datos);
   if (!out.ok) { marcar(form, out.errores); toast(out.error || 'Revisa los datos', { type: 'err' }); return; }
@@ -569,15 +670,15 @@ async function claseModal(c, ejercicios, temas) {
 /* --------------------------------------------------------------- retos */
 
 async function pintarRetos(host) {
-  const [retos, temas, ejercicios] = await Promise.all([
-    window.pc.challenges.list(), window.pc.topics.list(), window.pc.exercises.list()
+  const [retos, temas, ejercicios, insignias] = await Promise.all([
+    window.pc.challenges.list(), window.pc.topics.list(), window.pc.exercises.list(), window.pc.badges.list()
   ]);
   clear(host);
 
   host.append(el('div', { class: 'section-head' },
     el('h2', null, 'Retos especiales'), el('span', { class: 'count' }, retos.length),
     el('span', { class: 'spacer' }),
-    el('button', { class: 'btn sm primary', onclick: () => retoModal(null, temas, ejercicios) },
+    el('button', { class: 'btn sm primary', onclick: () => retoModal(null, temas, ejercicios, insignias) },
       icon('plus', 12), 'Nuevo reto')));
 
   if (!retos.length) {
@@ -601,7 +702,7 @@ async function pintarRetos(host) {
         r.reward ? el('span', { class: 'chip warn' }, r.reward) : null),
       el('div', { class: 'ex-desc' }, r.description || 'Sin descripción.'),
       el('div', { class: 'ex-actions' },
-        el('button', { class: 'btn sm outline', onclick: () => retoModal(r, temas, ejercicios) }, 'Editar'),
+        el('button', { class: 'btn sm outline', onclick: () => retoModal(r, temas, ejercicios, insignias) }, 'Editar'),
         el('button', {
           class: 'btn sm ' + (r.status === 'published' ? 'outline' : 'success'),
           onclick: async () => {
@@ -625,7 +726,7 @@ async function pintarRetos(host) {
   host.append(grid);
 }
 
-async function retoModal(r, temas, ejercicios) {
+async function retoModal(r, temas, ejercicios, insignias) {
   const form = el('form', { class: 'form-grid', novalidate: true });
   const selTema = el('select', { class: 'select', name: 'topicId' },
     el('option', { value: '' }, 'Sin tema'),
@@ -649,7 +750,13 @@ async function retoModal(r, temas, ejercicios) {
       campoBox('maxAttempts', 'Intentos',
         el('input', { class: 'input', name: 'maxAttempts', type: 'number', min: '0', value: r ? r.maxAttempts : '1' }))),
     campoBox('reward', 'Premio',
-      el('input', { class: 'input', name: 'reward', value: r ? r.reward : '', placeholder: 'Insignia 🏆 Maestro de funciones' })),
+      el('div', null,
+        el('input', {
+          class: 'input', name: 'reward', value: r ? r.reward : '',
+          list: 'reto-insignias', placeholder: 'Insignia 🏆 Maestro de funciones'
+        }),
+        el('datalist', { id: 'reto-insignias' },
+          (insignias || []).filter((b) => b.activa).map((b) => el('option', { value: b.name }))))),
     campoBox('requirements', 'Requisitos',
       el('textarea', { class: 'textarea', name: 'requirements', rows: '2' }, r ? r.requirements : '')),
     el('div', { class: 'ex-form-grid' },
@@ -680,9 +787,18 @@ async function retoModal(r, temas, ejercicios) {
 /* =========================================================== estudiante */
 
 async function vistaEstudiante(host) {
-  const [temas, ejercicios, mias] = await Promise.all([
-    window.pc.topics.list(), window.pc.exercises.list(), window.pc.submissions.mine()
+  const [temas, ejercicios, mias, retos] = await Promise.all([
+    window.pc.topics.list(), window.pc.exercises.list(), window.pc.submissions.mine(), window.pc.challenges.list()
   ]);
+  /*
+   * Sin esto, el ejercicio que un reto enlaza (challenges.exerciseId)
+   * aparecía DOS VECES en esta misma pantalla: una en la grilla "Ejercicios"
+   * de siempre y otra en "🔥 Retos" más abajo -pintarRetosEstudiante sigue
+   * recibiendo la lista completa sin filtrar, porque necesita encontrar ese
+   * mismo ejercicio para poder abrirlo-.
+   */
+  const idsDeRetos = new Set(retos.map((r) => r.exerciseId).filter(Boolean));
+  const ejerciciosDeTemario = ejercicios.filter((ej) => !idsDeRetos.has(ej.id));
 
   const porEjercicio = new Map();
   for (const s of mias) {
@@ -694,7 +810,7 @@ async function vistaEstudiante(host) {
 
   const selTema = el('select', { class: 'select', style: { width: 'auto', minWidth: '150px' } },
     el('option', { value: '' }, 'Todos los temas'),
-    temas.filter((t) => ejercicios.some((e) => e.topicId === t.id))
+    temas.filter((t) => ejerciciosDeTemario.some((e) => e.topicId === t.id))
       .map((t) => el('option', { value: t.id, selected: filtroTema === t.id }, t.nombre)));
   selTema.addEventListener('change', () => { filtroTema = selTema.value; if (hooks.refrescar) hooks.refrescar(); });
 
@@ -719,13 +835,13 @@ async function vistaEstudiante(host) {
     return 'pendiente';
   };
 
-  const visibles = ejercicios.filter((ej) => {
+  const visibles = ejerciciosDeTemario.filter((ej) => {
     if (filtroTema && ej.topicId !== filtroTema) return false;
     if (filtroEstado && clasificar(ej) !== filtroEstado) return false;
     return true;
   });
 
-  if (!ejercicios.length) {
+  if (!ejerciciosDeTemario.length) {
     page.append(el('div', { class: 'empty-page' },
       icon('tasks', 34),
       el('b', null, 'Todavía no hay ejercicios disponibles'),
@@ -735,7 +851,7 @@ async function vistaEstudiante(host) {
     page.append(el('div', { class: 'empty-page' },
       icon('search', 30),
       el('b', null, 'Ningún ejercicio con esos filtros'),
-      el('p', null, 'Tienes ' + ejercicios.length + ' ejercicio(s), pero los filtros los están ocultando.'),
+      el('p', null, 'Tienes ' + ejerciciosDeTemario.length + ' ejercicio(s), pero los filtros los están ocultando.'),
       el('button', {
         class: 'btn primary',
         onclick: () => { limpiarFiltros(); if (hooks.refrescar) hooks.refrescar(); }
