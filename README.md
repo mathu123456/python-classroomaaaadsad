@@ -4,14 +4,16 @@ IDE educativo de Python **offline-first**: editor CodeMirror 6 + **Python real e
 dentro de una aplicación de escritorio Electron, con **SQLite** en local y
 **Firebase** (Authentication + Realtime Database) para identidad y sincronización.
 
-> Estado actual: **versión 1.0.0**. Las seis fases del pliego están construidas y
-> probadas (núcleo, Python real, sistema académico, gamificación, estadísticas e
-> instaladores), más el pulido final: sincronización con cola y prioridades, tiempo
-> real, trabajo sin conexión, fotos de perfil y **entregas de varios archivos que el
-> profesor ejecuta desde la propia revisión**, y **Cursos**: cada profesor con los
-> suyos, aislados de verdad hasta en Firebase, con código de acceso y asignación de
-> ejercicios a estudiantes o grupos concretos. **259 pruebas de extremo a extremo en
-> verde**.
+> Estado actual: **versión 2.0.0**. Las seis fases del pliego original (1.0.0) están
+> construidas y probadas (núcleo, Python real, sistema académico, gamificación,
+> estadísticas e instaladores), más el pulido final: sincronización con cola y
+> prioridades, tiempo real, trabajo sin conexión, fotos de perfil y **entregas de
+> varios archivos que el profesor ejecuta desde la propia revisión**. La 2.0.0 añade
+> **Cursos**: cada profesor con los suyos, aislados de verdad hasta en Firebase, con
+> código de acceso, elección de rol al registrarse (con aprobación) y asignación de
+> ejercicios a estudiantes o grupos concretos -un cambio de fondo en cómo se organizan
+> los datos, no solo una función más, de ahí el salto de versión-. **259 pruebas de
+> extremo a extremo en verde**.
 > Además hay una **app móvil** (PWA) para el estudiante en [`mobile/`](mobile/).
 
 ---
