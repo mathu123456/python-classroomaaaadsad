@@ -210,8 +210,9 @@ Python Classroom debe ser una **herramienta integral y accesible** que permita:
 - Actualizaciones automáticas
 
 #### 📊 Estado Actual
-- **Versión 1.0.0** completa y probada
-- **218 pruebas de extremo a extremo en verde**
+- **Versión 2.0.0** completa y probada (incluye Cursos: aislamiento por profesor,
+  código de acceso, elección de rol al registrarse; ver `README.md` para el detalle)
+- **259 pruebas de extremo a extremo en verde**
 - Sincronización con cola y prioridades
 - Tiempo real con Firebase
 - Trabajo sin conexión confirmado
@@ -311,10 +312,10 @@ Ver [`firebase/CONFIGURACION.md`](firebase/CONFIGURACION.md) para detalles compl
 
 Python Classroom es un **proyecto integral y maduro** que busca revolucionar la enseñanza de Python en contextos educativos. Combina tecnología profesional (Electron, Firebase, SQLite) con una experiencia de usuario intuitiva para crear un entorno donde estudiantes y profesores puedan colaborar de forma efectiva, incluso sin conexión a internet.
 
-Con 218 pruebas pasadas, gamificación, estadísticas en tiempo real y evaluación detallada, Python Classroom está listo para ser una herramienta confiable en el aula del siglo XXI.
+Con 259 pruebas pasadas, gamificación, estadísticas en tiempo real, evaluación detallada y aislamiento total entre los cursos de cada profesor, Python Classroom está listo para ser una herramienta confiable en el aula del siglo XXI.
 
 ---
 
-**Versión**: 1.0.0  
+**Versión**: 2.0.0  
 **Estado**: Producción  
 **Última actualización**: Agosto 2026

@@ -1,7 +1,7 @@
 {
   "name": "python-classroom",
   "productName": "Python Classroom",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "IDE educativo de Python offline-first: editor CodeMirror 6 + Python real embebido.",
   "main": "electron/main.js",
   "author": "Python Classroom",
