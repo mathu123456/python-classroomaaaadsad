@@ -1,0 +1,266 @@
+/* Python Classroom - apariencia del editor CodeMirror 6 */
+
+#editor-host { position: relative; height: 100%; overflow: hidden; }
+
+#editor-host .cm-editor {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-code);
+  font-size: var(--editor-font-size);
+}
+#editor-host .cm-editor.cm-focused { outline: none; }
+
+#editor-host .cm-scroller {
+  font-family: var(--font-code);
+  line-height: 1.55;
+  overflow: auto;
+}
+
+#editor-host .cm-content {
+  padding: 8px 0 40vh;
+  caret-color: var(--accent);
+}
+
+#editor-host .cm-line { padding: 0 12px 0 8px; }
+
+/* ------------------------------------------------------------ gutters */
+
+#editor-host .cm-gutters {
+  background: var(--bg);
+  border-right: 1px solid var(--border-soft);
+  color: var(--gutter-text);
+  min-width: 46px;
+  user-select: none;
+}
+#editor-host .cm-lineNumbers .cm-gutterElement {
+  padding: 0 10px 0 14px;
+  min-width: 34px;
+  font-variant-numeric: tabular-nums;
+}
+#editor-host .cm-activeLineGutter {
+  background: var(--active-line);
+  color: var(--text);
+}
+#editor-host .cm-foldGutter .cm-gutterElement { padding: 0 3px; color: var(--text-faint); }
+#editor-host .cm-foldGutter .cm-gutterElement:hover { color: var(--text-strong); }
+
+/* --------------------------------------------------- seleccion y cursor */
+
+#editor-host .cm-activeLine { background: var(--active-line); }
+
+#editor-host .cm-selectionBackground,
+#editor-host .cm-content ::selection { background: var(--selection) !important; }
+#editor-host .cm-focused .cm-selectionBackground { background: var(--selection) !important; }
+
+#editor-host .cm-cursor, #editor-host .cm-dropCursor {
+  border-left: 2px solid var(--accent);
+}
+#editor-host .cm-selectionMatch { background: rgba(255, 212, 59, .14); border-radius: 2px; }
+
+#editor-host .cm-matchingBracket,
+#editor-host .cm-focused .cm-matchingBracket {
+  background: var(--matching-bracket);
+  outline: 1px solid rgba(255, 212, 59, .5);
+  border-radius: 2px;
+}
+#editor-host .cm-nonmatchingBracket { background: var(--error-soft); outline: 1px solid var(--error); }
+
+/* ----------------------------------------------------- espacio/plegado */
+
+#editor-host .cm-foldPlaceholder {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 3px;
+  padding: 0 6px;
+  margin: 0 3px;
+}
+
+/* -------------------------------------------------------- autocompletar */
+
+.cm-tooltip.cm-tooltip-autocomplete {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul {
+  max-height: 260px;
+  font-family: var(--font-code);
+  font-size: 12.5px;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul > li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 9px;
+  color: var(--text);
+  line-height: 1.7;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] .cm-completionDetail { color: rgba(255, 255, 255, .82); }
+
+.cm-completionLabel { flex: 1; }
+.cm-completionMatchedText {
+  text-decoration: none;
+  color: var(--py-yellow);
+  font-weight: 700;
+}
+.cm-tooltip-autocomplete > ul > li[aria-selected] .cm-completionMatchedText { color: #fff; }
+
+.cm-completionDetail {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--text-faint);
+  font-family: var(--font-ui);
+}
+
+.cm-completionIcon {
+  width: 15px;
+  text-align: center;
+  opacity: .95;
+  font-size: 11px;
+  padding-right: 0;
+  margin-right: 0;
+}
+.cm-completionIcon-keyword::after { content: 'K'; color: var(--syn-keyword); font-weight: 700; }
+.cm-completionIcon-function::after { content: 'ƒ'; color: var(--syn-def); font-weight: 700; }
+.cm-completionIcon-method::after { content: 'ƒ'; color: var(--syn-def); font-weight: 700; }
+.cm-completionIcon-class::after { content: 'C'; color: var(--syn-class); font-weight: 700; }
+.cm-completionIcon-variable::after { content: 'v'; color: var(--syn-builtin); font-weight: 700; }
+.cm-completionIcon-property::after { content: 'p'; color: var(--syn-builtin); }
+.cm-completionIcon-constant::after { content: 'c'; color: var(--syn-number); font-weight: 700; }
+.cm-completionIcon-module::after { content: 'M'; color: var(--syn-decorator); font-weight: 700; }
+.cm-completionIcon-text::after { content: '·'; color: var(--text-faint); }
+.cm-completionIcon-snippet::after { content: '{}'; color: var(--ok); font-size: 9px; }
+
+.cm-tooltip.cm-completionInfo {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
+  padding: 8px 10px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 340px;
+  line-height: 1.5;
+}
+.cm-completionInfo code {
+  font-family: var(--font-code);
+  color: var(--text-strong);
+  background: var(--surface-3);
+  padding: 0 3px;
+  border-radius: 3px;
+}
+
+/* ------------------------------------------------------------ tooltips */
+
+.cm-tooltip {
+  border: 1px solid var(--border);
+  background: var(--elevated);
+  color: var(--text);
+  border-radius: var(--radius);
+}
+.cm-tooltip-lint { padding: 0; }
+.cm-diagnostic {
+  padding: 6px 9px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  border-left: 3px solid var(--error);
+}
+.cm-diagnostic-error { border-left-color: var(--error); }
+.cm-diagnostic-warning { border-left-color: var(--warn); }
+
+#editor-host .cm-lintRange-error {
+  background: none;
+  border-bottom: 2px wavy var(--error);
+  padding-bottom: 1px;
+}
+#editor-host .cm-lintRange-warning { border-bottom: 2px wavy var(--warn); }
+
+#editor-host .cm-gutter-lint { width: 14px; }
+#editor-host .cm-gutter-lint .cm-gutterElement { padding: 0; }
+#editor-host .cm-lint-marker-error { content: none; }
+
+/* --------------------------------------------------- panel de busqueda */
+
+#editor-host .cm-panels {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-ui);
+  z-index: 20;
+}
+#editor-host .cm-panels.cm-panels-bottom { border-top: 1px solid var(--border); }
+#editor-host .cm-panel.cm-search {
+  padding: 8px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+#editor-host .cm-panel.cm-search input,
+#editor-host .cm-panel.cm-search button,
+#editor-host .cm-panel.cm-search label { margin: 0; }
+#editor-host .cm-panel.cm-search input[type="text"] {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 4px 8px;
+  font-family: var(--font-code);
+  font-size: 12px;
+  min-width: 170px;
+}
+#editor-host .cm-panel.cm-search input[type="text"]:focus { border-color: var(--accent); }
+#editor-host .cm-panel.cm-search button {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 3px 9px;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+#editor-host .cm-panel.cm-search button:hover { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+#editor-host .cm-panel.cm-search label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+#editor-host .cm-panel.cm-search [name="close"] {
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+}
+#editor-host .cm-searchMatch { background: rgba(255, 212, 59, .22); border-radius: 2px; }
+#editor-host .cm-searchMatch-selected { background: rgba(255, 212, 59, .48); outline: 1px solid var(--py-yellow); }
+
+/* --------------------------------------------------------- placeholder */
+
+#editor-host .cm-placeholder { color: var(--text-faint); font-style: italic; }
+
+/* ------------------------------------------------ modo pantalla completa */
+
+body.zen .titlebar,
+body.zen .activitybar,
+body.zen .sidebar,
+body.zen .v-resizer,
+body.zen .statusbar { display: none; }
+body.zen #app { grid-template-rows: 1fr; }

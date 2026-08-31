@@ -1,0 +1,8 @@
+node_modules/
+python/runtime/
+python/cache/
+installer/dist/
+src/js/vendor/cm6.js
+*.log
+.DS_Store
+Thumbs.db

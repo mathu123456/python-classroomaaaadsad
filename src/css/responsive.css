@@ -1,0 +1,244 @@
+/*
+ * Diseño adaptable: tableta y teléfono.
+ *
+ * Esta hoja va DESPUÉS de las demás y solo contiene reglas dentro de
+ * @media / @supports, así que en un monitor no cambia absolutamente nada.
+ *
+ * Tres tramos:
+ *   <= 1024px  tableta: menos aire, rejillas más estrechas, revisión en columna
+ *   <=  760px  teléfono: barra de actividad abajo, páginas a una columna,
+ *              diálogos como hojas, tablas con desplazamiento propio
+ *   <=  420px  teléfono estrecho: se recorta lo accesorio
+ *
+ * Además:
+ *   - (hover: none) los botones de fila se ven siempre, no al pasar el ratón
+ *   - env(safe-area-inset-*) para el notch y la barra inferior del iPhone
+ */
+
+/* ===================================================== tableta (<=1024px) */
+
+@media (max-width: 1024px) {
+  .page { padding: 18px 16px 40px; }
+  .kpi { min-height: 140px; }
+  .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .ex-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  .badge-grid { grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); }
+  .dos-columnas { grid-template-columns: 1fr; }
+
+  /* La revisión de una entrega deja de ser tres columnas y pasa a una. */
+  .revision {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto auto;
+    overflow-y: auto;
+  }
+  .revision > * { max-height: none; }
+  .rev-grade { position: static; }
+}
+
+/* ==================================================== teléfono (<=760px) */
+
+@media (max-width: 760px) {
+  /*
+   * --- la barra de actividad se va abajo, como en una app de móvil ---
+   *
+   * Ojo con `min-width: 0`: sin él, la barra con todos sus botones tiene un
+   * ancho minimo de contenido mayor que la ventana (unos 540px) y arrastra a
+   * todo el espacio de trabajo, que se sale a lo ancho en vez de dejar que la
+   * barra se desplace por dentro.
+   */
+  /*
+   * La rejilla de #app tenia una sola columna `auto`, que se estiraba al
+   * contenido mas ancho (la barra de estado y la de actividad, con todos sus
+   * botones). Con minmax(0, 1fr) la columna vale lo que la ventana y cada barra
+   * se desplaza por dentro.
+   */
+  #app { grid-template-columns: minmax(0, 1fr); }
+  #app, .workbench, .main, .page-host, .editor-area,
+  .titlebar, .statusbar { min-width: 0; }
+  .workbench { flex-direction: column; }
+
+  .activitybar {
+    order: 2;
+    width: 100%;
+    flex: 0 0 auto;
+    height: auto;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    gap: 0;
+    padding: 4px 2px calc(4px + env(safe-area-inset-bottom));
+    border-right: none;
+    border-top: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+    min-width: 0;
+  }
+  .activitybar::-webkit-scrollbar { display: none; }
+  .activitybar .spacer { display: none; }
+
+  .act-btn {
+    width: 46px;
+    height: 42px;
+    flex: 0 0 auto;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    border-radius: var(--radius-sm);
+  }
+  .act-btn.active { border-left-color: transparent; border-bottom-color: var(--accent); }
+  .act-sep { display: none; }
+
+  .main, .page-host { order: 1; }
+  .page-host { padding-bottom: 8px; max-width: 100%; }
+  .page { max-width: 100%; }
+
+  /*
+   * --- barra de título y de estado: solo lo imprescindible ---
+   *
+   * Se esconden los menús y el título del centro (sus acciones están en la barra
+   * de actividad y en los menús contextuales), pero NO los botones de la
+   * ventana: si alguien encoge la ventana en un escritorio, tiene que poder
+   * cerrarla.
+   */
+  .titlebar { overflow: hidden; }
+  .menubar, .tb-center, .tb-spacer:first-of-type { display: none; }
+  .tb-brand {
+    padding: 0 10px;
+    font-size: 12px;
+    min-width: 0;
+    flex: 1 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .window-controls { flex: 0 0 auto; }
+
+  .statusbar { font-size: 10.5px; overflow-x: auto; scrollbar-width: none; }
+  .statusbar::-webkit-scrollbar { display: none; }
+  .statusbar #sb-cursor, .statusbar #sb-indent { display: none; }
+
+  /* --- páginas a una columna --- */
+  .page { padding: 14px 12px 28px; }
+  .page-head { flex-direction: column; gap: 10px; }
+  .page-head h1 { font-size: 19px; }
+  .page-head .ph-actions { width: 100%; }
+  .page-head .ph-actions .btn { flex: 1 1 auto; }
+
+  /* Las tarjetas de indicadores están pensadas para un monitor: en un teléfono
+     ese alto fijo deja media pantalla vacía. */
+  .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; align-items: start; }
+  .kpi { min-height: 0; padding: 12px 13px; }
+  .kpi .k-value { font-size: 20px; }
+  .ex-grid { grid-template-columns: 1fr; }
+  .badge-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+
+  .hero { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .hero .h-actions { width: 100%; }
+  .hero .h-actions .btn { flex: 1 1 auto; }
+
+  .section-head { flex-wrap: wrap; row-gap: 6px; }
+  .filtro-barra { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; scrollbar-width: none; }
+  .filtro-barra::-webkit-scrollbar { display: none; }
+  .filtro-barra .btn { flex: 0 0 auto; }
+
+  /* --- filas de lista: en dos líneas y con las acciones visibles --- */
+  .list-row { flex-wrap: wrap; row-gap: 6px; padding: 10px 12px; }
+  .list-row .lr-main { flex: 1 1 100%; order: -1; }
+  .list-row .lr-actions { margin-left: auto; }
+
+  /* --- tablas: se desplazan solas, no rompen la página --- */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table.data { min-width: 520px; }
+
+  /* --- ranking --- */
+  .rk-row { flex-wrap: wrap; row-gap: 4px; }
+  .rk-main { flex: 1 1 60%; }
+  .rk-xp { margin-left: auto; }
+
+  /* --- gráficas: se leen mejor un poco más altas --- */
+  .chart-card { padding: 10px 10px 12px; }
+  .chart-label { font-size: 11px; }
+  .chart-tick, .chart-value { font-size: 10.5px; }
+
+  /* --- diálogos como hoja inferior --- */
+  .modal-backdrop { align-items: flex-end; padding: 0; }
+  .modal, .modal.wide {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 14px 14px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .modal-body { max-height: none; }
+  .modal-foot { flex-wrap: wrap; }
+  .modal-foot .btn { flex: 1 1 auto; }
+
+  /* --- formularios --- */
+  .form-row, .ex-form-grid { grid-template-columns: 1fr; }
+  .input, .select, .textarea { font-size: 15px; }   /* iOS no hace zoom desde 15px */
+
+  /* --- entorno de programación --- */
+  .sidebar, .sidebar-resizer { display: none !important; }
+  .toolbar { overflow-x: auto; scrollbar-width: none; }
+  .toolbar::-webkit-scrollbar { display: none; }
+  .tabs { overflow-x: auto; }
+  .panel { height: 42vh !important; }
+  .panel-tabs { overflow-x: auto; }
+
+  /* --- barra del ejercicio en curso --- */
+  .exercise-bar { flex-wrap: wrap; row-gap: 6px; padding: 8px 10px; }
+  .exercise-bar .eb-title { flex: 1 1 100%; }
+  .exercise-bar .btn { flex: 1 1 auto; }
+
+  /* --- pantalla de acceso y primer arranque --- */
+  #auth-card { width: 100%; max-width: 100%; border-radius: 0; min-height: 100vh; }
+  .prep-card { width: 100%; border-radius: 0; min-height: 100vh; }
+
+  /* --- pulsaciones: nada de zonas de 20px --- */
+  .btn, .icon-btn, .sb-item { min-height: 36px; }
+  .icon-btn { min-width: 36px; }
+}
+
+/* ============================================ teléfono estrecho (<=420px) */
+
+@media (max-width: 420px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .kpi .k-value { font-size: 18px; }
+  .badge-grid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+  .bt-note { display: none; }             /* la condición se ve al pulsar la ficha */
+  .rk-pos { min-width: 24px; font-size: 13px; }
+  .aviso-tema .at-datos { grid-template-columns: 1fr 1fr; }
+  .page-head p { font-size: 12px; }
+  .statusbar #sb-python span:not(.sb-dot) { display: none; }
+}
+
+/* ================================================= pantallas sin ratón */
+
+@media (hover: none) {
+  /* Sin ratón no hay "pasar por encima": lo que se ocultaba, se muestra. */
+  .list-row .lr-actions,
+  .ex-card .ex-actions,
+  .entrega-row .lr-actions { opacity: 1 !important; visibility: visible !important; }
+
+  .badge-tile:hover { transform: none; }
+  .chart-bar:hover { opacity: 1; }
+
+  * { -webkit-tap-highlight-color: transparent; }
+}
+
+/* ============================================ altura corta (móvil tumbado) */
+
+@media (max-height: 520px) and (max-width: 900px) {
+  .panel { height: 34vh !important; }
+  .hero { padding: 12px; }
+  #auth-card, .prep-card { min-height: auto; }
+}
+
+/* ===================================================== notch del iPhone */
+
+@supports (padding: env(safe-area-inset-left)) {
+  @media (max-width: 760px) {
+    .titlebar { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+    .page { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+    .statusbar { padding-bottom: env(safe-area-inset-bottom); }
+  }
+}

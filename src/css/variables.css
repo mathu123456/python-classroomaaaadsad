@@ -1,0 +1,133 @@
+/* Python Classroom - tokens de diseno (tema oscuro por defecto y tema claro) */
+
+:root {
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-code: "Cascadia Code", "JetBrains Mono", "Fira Code", Consolas, "SF Mono", "Liberation Mono", monospace;
+
+  --titlebar-h: 34px;
+  --activity-w: 48px;
+  --toolbar-h: 38px;
+  --tabs-h: 35px;
+  --status-h: 24px;
+  --radius: 6px;
+  --radius-sm: 4px;
+
+  --editor-font-size: 14px;
+  --console-font-size: 13px;
+
+  --speed: 120ms;
+  --shadow-1: 0 2px 8px rgba(0, 0, 0, .28);
+  --shadow-2: 0 12px 34px rgba(0, 0, 0, .42);
+
+  /* Marca */
+  --py-blue: #4b8bf5;
+  --py-yellow: #ffd43b;
+}
+
+/* ------------------------------------------------------------- oscuro */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #12151c;
+  --surface: #171b24;
+  --surface-2: #1c212c;
+  --surface-3: #232936;
+  --elevated: #1e2430;
+  --border: #2a3140;
+  --border-soft: #222835;
+
+  --text: #d8dde7;
+  --text-strong: #f2f5fa;
+  --text-muted: #8b93a7;
+  --text-faint: #626b7e;
+
+  --accent: #4b8bf5;
+  --accent-hover: #5f9aff;
+  --accent-soft: rgba(75, 139, 245, .16);
+  --accent-text: #ffffff;
+
+  --ok: #4bcf87;
+  --ok-soft: rgba(75, 207, 135, .14);
+  --warn: #f0b23a;
+  --warn-soft: rgba(240, 178, 58, .14);
+  --error: #ff6b6b;
+  --error-soft: rgba(255, 107, 107, .14);
+  --info: #57b6e8;
+
+  --scrollbar: #39415420;
+  --scrollbar: rgba(140, 152, 178, .32);
+  --scrollbar-hover: rgba(160, 172, 198, .52);
+
+  --selection: rgba(75, 139, 245, .30);
+  --gutter-text: #5a6377;
+  --active-line: rgba(255, 255, 255, .035);
+  --matching-bracket: rgba(255, 212, 59, .28);
+
+  /* Sintaxis */
+  --syn-keyword: #ff7ab2;
+  --syn-builtin: #6ec9ff;
+  --syn-string: #a5e075;
+  --syn-number: #f5b57a;
+  --syn-comment: #6b7487;
+  --syn-def: #ffd43b;
+  --syn-class: #7ee1c9;
+  --syn-operator: #c3cbdd;
+  --syn-variable: #d8dde7;
+  --syn-decorator: #c58cf5;
+  --syn-self: #ff9d6b;
+}
+
+/* --------------------------------------------------------------- claro */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --surface-2: #f6f8fb;
+  --surface-3: #eaeef5;
+  --elevated: #ffffff;
+  --border: #d5dbe6;
+  --border-soft: #e3e8f0;
+
+  --text: #2a3140;
+  --text-strong: #10141c;
+  --text-muted: #667085;
+  --text-faint: #8a93a5;
+
+  --accent: #2f6fdb;
+  --accent-hover: #2560c4;
+  --accent-soft: rgba(47, 111, 219, .12);
+  --accent-text: #ffffff;
+
+  --ok: #16a05f;
+  --ok-soft: rgba(22, 160, 95, .12);
+  --warn: #b47708;
+  --warn-soft: rgba(180, 119, 8, .12);
+  --error: #d13b3b;
+  --error-soft: rgba(209, 59, 59, .10);
+  --info: #1f7fb8;
+
+  --scrollbar: rgba(90, 105, 130, .28);
+  --scrollbar-hover: rgba(70, 85, 110, .45);
+
+  --selection: rgba(47, 111, 219, .22);
+  --gutter-text: #97a0b2;
+  --active-line: rgba(20, 30, 50, .035);
+  --matching-bracket: rgba(47, 111, 219, .22);
+
+  --syn-keyword: #af00db;
+  --syn-builtin: #0a68c4;
+  --syn-string: #1a7f37;
+  --syn-number: #b3591a;
+  --syn-comment: #7d8797;
+  --syn-def: #7a5c00;
+  --syn-class: #0d7a6d;
+  --syn-operator: #47506a;
+  --syn-variable: #2a3140;
+  --syn-decorator: #7a3fb8;
+  --syn-self: #c2410c;
+
+  --shadow-1: 0 2px 8px rgba(20, 30, 50, .10);
+  --shadow-2: 0 12px 34px rgba(20, 30, 50, .18);
+}

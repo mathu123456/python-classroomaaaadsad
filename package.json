@@ -1,0 +1,124 @@
+{
+  "name": "python-classroom",
+  "productName": "Python Classroom",
+  "version": "1.0.0",
+  "description": "IDE educativo de Python offline-first: editor CodeMirror 6 + Python real embebido.",
+  "main": "electron/main.js",
+  "author": "Python Classroom",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "postinstall": "node scripts/build-vendor.js",
+    "build:vendor": "node scripts/build-vendor.js",
+    "watch:vendor": "node scripts/build-vendor.js --watch",
+    "setup:python": "node scripts/setup-python.js",
+    "setup": "node scripts/build-vendor.js && node scripts/make-icon.js && node scripts/setup-python.js",
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "doctor": "node scripts/doctor.js",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux",
+    "dist:mac": "electron-builder --mac",
+    "test:e2e": "node scripts/run-e2e.js",
+    "make:icon": "node scripts/make-icon.js",
+    "movil": "node scripts/serve-mobile.js"
+  },
+  "devDependencies": {
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.19.0",
+    "@codemirror/commands": "^6.9.0",
+    "@codemirror/lang-python": "^6.2.1",
+    "@codemirror/language": "^6.11.0",
+    "@codemirror/lint": "^6.9.0",
+    "@codemirror/search": "^6.5.11",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.43.9",
+    "@lezer/common": "^1.2.3",
+    "@lezer/highlight": "^1.2.1",
+    "firebase": "^12.18.0"
+  },
+  "build": {
+    "appId": "co.pythonclassroom.app",
+    "productName": "Python Classroom",
+    "directories": {
+      "output": "installer/dist",
+      "buildResources": "assets"
+    },
+    "asar": true,
+    "asarUnpack": [
+      "scripts/**"
+    ],
+    "files": [
+      "electron/**/*",
+      "src/**/*",
+      "assets/**/*",
+      "scripts/setup-python.js",
+      "package.json",
+      "!**/__pycache__/**",
+      "!**/*.pyc",
+      "!node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "python",
+        "to": "python",
+        "filter": [
+          "**/*",
+          "!cache/**",
+          "!**/__pycache__/**",
+          "!**/*.pyc",
+          "!**/*.part",
+          "!**/__pycache__",
+          "!**/__pycache__/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "PythonClassroom-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Python Classroom",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "installerHeaderIcon": "assets/icon.ico"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development",
+      "icon": "assets/icon.png",
+      "artifactName": "PythonClassroom-${version}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.developer-tools",
+      "icon": "assets/icon.png",
+      "artifactName": "PythonClassroom-${version}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "python-classroom",
+        "repo": "python-classroom",
+        "releaseType": "release"
+      }
+    ]
+  }
+}

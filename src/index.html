@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://*.firebaseio.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com; font-src 'self'; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebaseinstallations.googleapis.com https://api.cloudinary.com https://res.cloudinary.com; frame-src https://*.firebaseio.com; object-src 'none'; base-uri 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Python Classroom</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23101216'/%3E%3Ctext x='16' y='22' font-size='24' font-weight='bold' fill='%23f5b83d' text-anchor='middle' font-family='monospace'%3EPy%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/editor.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <!-- Adaptacion a tableta y telefono: va al final para poder ajustar lo anterior. -->
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+<!-- ==================================================== sprite de iconos -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="ico-base" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></g>
+  </defs>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2.5h8a2 2 0 012 2V18a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></symbol>
+  <symbol id="i-folder-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2.5h8a2 2 0 012 2V10"/><path d="M3 10h18l-2.2 8.3a2 2 0 01-1.94 1.7H5.6a2 2 0 01-1.94-1.7L3 10z"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-py" viewBox="0 0 24 24"><path d="M11.9 2c-1.8 0-3.3.3-4.3.8C6.4 3.4 6 4.4 6 5.6V8h6v.8H4.9c-1.3 0-2.4.8-2.8 2.2-.4 1.6-.4 2.6 0 4.2.3 1.3 1.1 2.2 2.4 2.2H6v-2.6c0-1.5 1.3-2.8 2.9-2.8h4.9c1.2 0 2.2-1 2.2-2.2V5.6c0-1.2-1-2.1-2.2-2.3-.8-.2-1.6-.3-2.4-.3zM9.4 4.4c.5 0 .9.4.9.9s-.4.9-.9.9-.9-.4-.9-.9.4-.9.9-.9z" fill="#4b8bf5" stroke="none"/><path d="M12.1 22c1.8 0 3.3-.3 4.3-.8 1.2-.6 1.6-1.6 1.6-2.8V16h-6v-.8h7.1c1.3 0 2.4-.8 2.8-2.2.4-1.6.4-2.6 0-4.2-.3-1.3-1.1-2.2-2.4-2.2H18v2.6c0 1.5-1.3 2.8-2.9 2.8h-4.9c-1.2 0-2.2 1-2.2 2.2v3.2c0 1.2 1 2.1 2.2 2.3.8.2 1.6.3 2.4.3zm2.5-2.4c-.5 0-.9-.4-.9-.9s.4-.9.9-.9.9.4.9.9-.4.9-.9.9z" fill="#ffd43b" stroke="none"/></symbol>
+  <symbol id="i-json" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H7a2 2 0 00-2 2v3a2 2 0 01-2 2 2 2 0 012 2v3a2 2 0 002 2h2M15 4h2a2 2 0 012 2v3a2 2 0 002 2 2 2 0 00-2 2v3a2 2 0 01-2 2h-2"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 11h16M4 16h9"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></symbol>
+  <symbol id="i-new-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2v-8"/><path d="M18 3v6M15 6h6"/></symbol>
+  <symbol id="i-new-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2.5h8a2 2 0 012 2V18a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/><path d="M12 11v5M9.5 13.5h5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 10-2.3 6.3"/><path d="M20 5v6h-6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></symbol>
+  <symbol id="i-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6l8 4.2v9.4L12 21l-8-4.8V6.8l8-4.2z"/><path d="M4.2 6.9L12 11l7.8-4.1M12 11v10"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.7 1.7 0 00-1.87-.34 1.7 1.7 0 00-1 1.55V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.56 1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.7 1.7 0 004.6 15a1.7 1.7 0 00-1.55-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.55-1.1 1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06A1.7 1.7 0 009 4.6a1.7 1.7 0 001-1.55V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.55 1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06A1.7 1.7 0 0019.4 9V9a1.7 1.7 0 001.55 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-chevron-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-min" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M6 12h12"/></symbol>
+  <symbol id="i-max" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="6.5" y="6.5" width="11" height="11" rx="1"/></symbol>
+  <symbol id="i-restore" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="5.5" y="8.5" width="10" height="10" rx="1"/><path d="M8.5 8.5v-2a1 1 0 011-1h8a1 1 0 011 1v8a1 1 0 01-1 1h-2"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1L18 7"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6M10 14L21 3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></symbol>
+  <symbol id="i-sidebar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></symbol>
+  <symbol id="i-console" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8h18"/><path d="M7 13h5"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></symbol>
+  <symbol id="i-zoom-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6M11 8v6M8 11h6"/></symbol>
+  <symbol id="i-zoom-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6M8 11h6"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></symbol>
+  <symbol id="i-wrap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 18h7"/><path d="M3 12h14a3 3 0 010 6h-3l2-2m-2 2l2 2"/></symbol>
+  <symbol id="i-broom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5l6 6M13 6l5 5-6.5 6.5a3 3 0 01-4.2 0l-.8-.8a3 3 0 010-4.2L13 6z"/><path d="M8 16l-4 5"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5.5 9.5V20a1 1 0 001 1h11a1 1 0 001-1V9.5"/><path d="M9.5 21v-6h5v6"/></symbol>
+  <symbol id="i-tasks" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h10M9 12h10M9 19h10"/><path d="M4 5l1.2 1.2L7.5 3.8M4 12l1.2 1.2L7.5 10.8M4 19l1.2 1.2L7.5 17.8"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"/><path d="M2.5 20a6.5 6.5 0 0113 0"/><path d="M16 5.2a3.4 3.4 0 010 5.6M18.5 14.4A6.5 6.5 0 0121.5 20"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 20H6a2 2 0 01-2-2V6a2 2 0 012-2h8"/><path d="M17 15l4-3-4-3M21 12H10"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M15.5 12v2.2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8L12 3.5z"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10" width="15" height="10.5" rx="2"/><path d="M8 10V7.5a4 4 0 018 0V10"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5L12 13l8.5-6.5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"/><path d="M9.6 9.7a2.8 2.8 0 003.9 3.9"/><path d="M6.3 6.5C3.7 8.2 2 12 2 12s3.6 6.5 10 6.5c1.7 0 3.2-.5 4.5-1.2M18.6 15.2C20.8 13.6 22 12 22 12s-3.6-6.5-10-6.5c-.9 0-1.7.1-2.5.3"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.3l2.6 2.6L16 9.5"/></symbol>
+  <symbol id="i-graduation" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l10 4.5-10 4.5L2 8.5 12 4z"/><path d="M6 10.7V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-5.3"/></symbol>
+</svg>
+
+<div id="app">
+
+  <!-- ======================================================== titlebar -->
+  <header class="titlebar">
+    <div class="tb-brand">
+      <svg class="logo"><use href="#i-py"></use></svg>
+      <span>Python Classroom</span>
+    </div>
+    <nav class="menubar" id="menubar">
+      <button data-menu="archivo">Archivo</button>
+      <button data-menu="editar">Editar</button>
+      <button data-menu="ejecutar">Ejecutar</button>
+      <button data-menu="ver">Ver</button>
+      <button data-menu="ayuda">Ayuda</button>
+    </nav>
+    <div class="tb-spacer"></div>
+    <div class="tb-center" id="tb-title"></div>
+    <div class="tb-spacer"></div>
+    <div class="window-controls">
+      <button id="win-min" title="Minimizar"><svg width="14" height="14"><use href="#i-min"></use></svg></button>
+      <button id="win-max" title="Maximizar"><svg width="14" height="14"><use href="#i-max"></use></svg></button>
+      <button id="win-close" class="close" title="Cerrar"><svg width="14" height="14"><use href="#i-close"></use></svg></button>
+    </div>
+  </header>
+
+  <!-- ======================================================= workbench -->
+  <div class="workbench">
+
+    <nav class="activitybar" id="activitybar">
+      <button class="act-btn" data-page="inicio" title="Inicio (Ctrl+1)">
+        <svg width="21" height="21"><use href="#i-home"></use></svg>
+      </button>
+      <button class="act-btn" data-page="ejercicios" title="Ejercicios (Ctrl+2)">
+        <svg width="21" height="21"><use href="#i-tasks"></use></svg>
+        <span class="dot"></span>
+      </button>
+      <button class="act-btn" data-page="entregas" title="Entregas (Ctrl+3)">
+        <svg width="21" height="21"><use href="#i-check-circle"></use></svg>
+        <span class="dot"></span>
+      </button>
+      <button class="act-btn" data-page="proyectos" title="Proyectos (Ctrl+4)">
+        <svg width="21" height="21"><use href="#i-graduation"></use></svg>
+      </button>
+      <button class="act-btn" data-page="rankings" title="Rankings (Ctrl+6)">
+        <svg width="21" height="21"><use href="#i-chart"></use></svg>
+      </button>
+      <button class="act-btn" data-page="curso" title="Estudiantes y curso (Ctrl+5)" id="act-curso" hidden>
+        <svg width="21" height="21"><use href="#i-users"></use></svg>
+      </button>
+      <button class="act-btn" data-page="estadisticas" title="Estadísticas (Ctrl+7)" id="act-stats" hidden>
+        <svg width="21" height="21"><use href="#i-table"></use></svg>
+      </button>
+      <div class="act-sep"></div>
+      <button class="act-btn active" data-view="explorer" title="Explorador (Ctrl+Shift+E)">
+        <svg width="21" height="21"><use href="#i-folder"></use></svg>
+      </button>
+      <button class="act-btn" data-view="packages" title="Librerías (Ctrl+Shift+P)">
+        <svg width="21" height="21"><use href="#i-package"></use></svg>
+        <span class="dot"></span>
+      </button>
+      <button class="act-btn" data-view="python" title="Runtime de Python">
+        <svg width="21" height="21"><use href="#i-py"></use></svg>
+        <span class="dot"></span>
+      </button>
+      <button class="act-btn" data-view="help" title="Guía rápida">
+        <svg width="20" height="20"><use href="#i-book"></use></svg>
+      </button>
+      <div class="spacer"></div>
+      <button class="act-btn act-user" id="act-user" title="Mi cuenta">
+        <span class="avatar" id="user-avatar">··</span>
+      </button>
+      <button class="act-btn" data-view="settings" title="Configuración (Ctrl+,)">
+        <svg width="21" height="21"><use href="#i-settings"></use></svg>
+      </button>
+    </nav>
+
+    <aside class="sidebar" id="sidebar">
+
+      <!-- ---------------------------------------------- explorador -->
+      <section class="side-view active" data-view="explorer">
+        <div class="side-head">
+          <span id="ws-name">Explorador</span>
+          <span class="spacer"></span>
+          <button class="icon-btn" id="ex-new-file" title="Nuevo archivo"><svg width="15" height="15"><use href="#i-new-file"></use></svg></button>
+          <button class="icon-btn" id="ex-new-dir" title="Nueva carpeta"><svg width="15" height="15"><use href="#i-new-folder"></use></svg></button>
+          <button class="icon-btn" id="ex-refresh" title="Actualizar"><svg width="15" height="15"><use href="#i-refresh"></use></svg></button>
+        </div>
+        <div class="side-body" id="explorer-body"></div>
+      </section>
+
+      <!-- ----------------------------------------------- librerías -->
+      <section class="side-view" data-view="packages">
+        <div class="side-head">
+          <span>Librerías</span>
+          <span class="spacer"></span>
+          <button class="icon-btn" id="pkg-refresh" title="Actualizar lista"><svg width="15" height="15"><use href="#i-refresh"></use></svg></button>
+        </div>
+        <div class="pkg-toolbar">
+          <div class="search-box" style="flex:1">
+            <svg class="s-icon" width="13" height="13"><use href="#i-search"></use></svg>
+            <input class="input" id="pkg-search" placeholder="Buscar: pandas, numpy…" spellcheck="false">
+          </div>
+        </div>
+        <div class="pkg-toolbar" style="padding-top:0;border-bottom:none">
+          <button class="btn sm outline" data-pkgfilter="all">Todas</button>
+          <button class="btn sm outline" data-pkgfilter="installed">Instaladas</button>
+          <button class="btn sm outline" data-pkgfilter="updates">Actualizaciones</button>
+        </div>
+        <div class="pkg-list" id="pkg-list"></div>
+        <div class="pkg-detail" id="pkg-detail" hidden></div>
+      </section>
+
+      <!-- ------------------------------------------------- runtime -->
+      <section class="side-view" data-view="python">
+        <div class="side-head">
+          <span>Runtime de Python</span>
+          <span class="spacer"></span>
+          <button class="icon-btn" id="rt-refresh" title="Volver a detectar"><svg width="15" height="15"><use href="#i-refresh"></use></svg></button>
+        </div>
+        <div class="side-body" id="runtime-body"></div>
+      </section>
+
+      <!-- ---------------------------------------------------- ayuda -->
+      <section class="side-view" data-view="help">
+        <div class="side-head"><span>Guía rápida</span></div>
+        <div class="side-body" id="help-body"></div>
+      </section>
+
+      <!-- -------------------------------------------- configuración -->
+      <section class="side-view" data-view="settings">
+        <div class="side-head">
+          <span>Configuración</span>
+          <span class="spacer"></span>
+          <button class="icon-btn" id="cfg-reset" title="Restablecer"><svg width="15" height="15"><use href="#i-refresh"></use></svg></button>
+        </div>
+        <div class="side-body" id="settings-body"></div>
+      </section>
+
+    </aside>
+
+    <div class="v-resizer" id="sidebar-resizer"></div>
+
+    <!-- ============================================================ main -->
+    <main class="main">
+
+      <div class="runtime-banner" id="runtime-banner">
+        <svg width="16" height="16"><use href="#i-alert"></use></svg>
+        <span id="runtime-banner-text"></span>
+        <span class="spacer"></span>
+        <button class="btn sm primary" id="runtime-banner-fix">Instalar runtime</button>
+        <button class="icon-btn" id="runtime-banner-hide"><svg width="14" height="14"><use href="#i-close"></use></svg></button>
+      </div>
+
+      <!-- barra del ejercicio en curso (cronómetro, entrega) -->
+      <div class="exercise-bar" id="exercise-bar" hidden></div>
+
+      <div class="toolbar">
+        <button class="btn success" id="btn-run" title="Ejecutar (Ctrl+Enter)">
+          <svg width="12" height="12"><use href="#i-play"></use></svg> Ejecutar
+        </button>
+        <button class="btn danger" id="btn-stop" title="Detener (Ctrl+Shift+C)" disabled>
+          <svg width="11" height="11"><use href="#i-stop"></use></svg> Detener
+        </button>
+        <span class="sep"></span>
+        <button class="icon-btn" id="btn-save" title="Guardar (Ctrl+S)"><svg width="16" height="16"><use href="#i-save"></use></svg></button>
+        <button class="icon-btn" id="btn-newfile" title="Nuevo archivo (Ctrl+N)"><svg width="16" height="16"><use href="#i-new-file"></use></svg></button>
+        <button class="icon-btn" id="btn-openfolder" title="Abrir carpeta (Ctrl+K)"><svg width="16" height="16"><use href="#i-folder-open"></use></svg></button>
+        <span class="sep"></span>
+        <button class="icon-btn" id="btn-find" title="Buscar (Ctrl+F)"><svg width="16" height="16"><use href="#i-search"></use></svg></button>
+        <button class="icon-btn" id="btn-wrap" title="Ajuste de línea"><svg width="16" height="16"><use href="#i-wrap"></use></svg></button>
+        <button class="icon-btn" id="btn-zoom-out" title="Reducir texto (Ctrl+-)"><svg width="16" height="16"><use href="#i-zoom-out"></use></svg></button>
+        <button class="icon-btn" id="btn-zoom-in" title="Aumentar texto (Ctrl++)"><svg width="16" height="16"><use href="#i-zoom-in"></use></svg></button>
+        <span class="spacer"></span>
+        <div class="run-state" id="run-state"><span class="pulse"></span><span id="run-state-text">Listo</span></div>
+        <span class="sep"></span>
+        <button class="icon-btn" id="btn-theme" title="Cambiar tema"><svg width="16" height="16"><use href="#i-moon"></use></svg></button>
+        <button class="icon-btn" id="btn-panel" title="Mostrar/ocultar panel (Ctrl+J)"><svg width="16" height="16"><use href="#i-console"></use></svg></button>
+      </div>
+
+      <div class="tabs" id="tabs"></div>
+
+      <div class="editor-area">
+        <div id="editor-host"></div>
+        <div class="empty-state" id="editor-empty">
+          <div class="es-inner">
+            <svg width="54" height="54" style="margin:0 auto 14px;opacity:.85"><use href="#i-py"></use></svg>
+            <h2>Python Classroom</h2>
+            <p>Escribe, ejecuta y aprende Python sin conexión.</p>
+            <div class="keys">
+              <div class="keyrow"><span>Nuevo archivo</span><kbd>Ctrl + N</kbd></div>
+              <div class="keyrow"><span>Abrir carpeta</span><kbd>Ctrl + K</kbd></div>
+              <div class="keyrow"><span>Ejecutar</span><kbd>Ctrl + Enter</kbd></div>
+              <div class="keyrow"><span>Guardar</span><kbd>Ctrl + S</kbd></div>
+              <div class="keyrow"><span>Buscar</span><kbd>Ctrl + F</kbd></div>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:center;margin-top:20px">
+              <button class="btn primary" id="es-new">Nuevo archivo</button>
+              <button class="btn outline" id="es-open">Abrir carpeta</button>
+              <button class="btn outline" id="es-project">Crear proyecto</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="h-resizer" id="panel-resizer"></div>
+
+      <!-- ========================================================= panel -->
+      <section class="panel" id="panel">
+        <div class="panel-tabs" id="panel-tabs">
+          <button class="ptab active" data-tab="console"><svg width="13" height="13"><use href="#i-console"></use></svg> Consola</button>
+          <button class="ptab" data-tab="terminal"><svg width="13" height="13"><use href="#i-terminal"></use></svg> Terminal</button>
+          <button class="ptab" data-tab="problems">Problemas <span class="badge zero" id="problems-badge">0</span></button>
+          <span class="spacer"></span>
+          <button class="icon-btn" id="panel-clear" title="Limpiar (Ctrl+L)"><svg width="15" height="15"><use href="#i-broom"></use></svg></button>
+          <button class="icon-btn" id="panel-collapse" title="Contraer panel"><svg width="15" height="15"><use href="#i-chevron-down"></use></svg></button>
+        </div>
+        <div class="panel-body">
+
+          <div class="panel-view active" data-view="console">
+            <div class="stream" id="console-out"></div>
+            <div class="input-row disabled" id="console-input-row">
+              <span class="caret">&gt;&gt;&gt;</span>
+              <input id="console-stdin" placeholder="El programa no está pidiendo datos" spellcheck="false" autocomplete="off">
+              <span class="hint">Enter envía</span>
+            </div>
+          </div>
+
+          <div class="panel-view" data-view="terminal">
+            <div class="stream" id="term-out"></div>
+            <div class="input-row" id="term-input-row">
+              <span class="caret" id="term-prompt">&gt;</span>
+              <input id="term-input" placeholder="python  ·  pip list  ·  cd carpeta  ·  ayuda" spellcheck="false" autocomplete="off">
+              <span class="hint">Ctrl+C detiene</span>
+            </div>
+          </div>
+
+          <div class="panel-view" data-view="problems">
+            <div class="problem-list" id="problem-list">
+              <div class="empty-note">No hay problemas detectados.</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ========================================= páginas a pantalla completa -->
+    <section class="page-host" id="page-host" hidden></section>
+  </div>
+
+  <!-- ======================================================= statusbar -->
+  <footer class="statusbar">
+    <button class="sb-item" id="sb-toggle-side" title="Mostrar/ocultar barra lateral">
+      <svg width="13" height="13"><use href="#i-sidebar"></use></svg>
+    </button>
+    <span class="sb-item" id="sb-workspace">Sin carpeta abierta</span>
+    <button class="sb-item" id="sb-course" title="Curso activo" hidden></button>
+    <span class="spacer"></span>
+    <span class="sb-item" id="sb-problems"></span>
+    <button class="sb-item" id="sb-cursor">Ln 1, Col 1</button>
+    <button class="sb-item" id="sb-indent">Espacios: 4</button>
+    <span class="sb-item">UTF-8</span>
+    <button class="sb-item" id="sb-python"><span class="sb-dot"></span> Python</button>
+    <span class="sb-item" id="sb-saved"></span>
+    <button class="sb-item" id="sb-sync" title="Estado de sincronización"></button>
+    <button class="sb-item" id="sb-user" hidden></button>
+  </footer>
+
+</div>
+
+<!-- ==================================================== pantalla de acceso -->
+<div id="auth-screen" class="auth-screen" hidden>
+  <div class="auth-window-controls">
+    <button class="wc" id="auth-min" title="Minimizar"><svg width="14" height="14"><use href="#i-min"></use></svg></button>
+    <button class="wc" id="auth-max" title="Maximizar"><svg width="14" height="14"><use href="#i-max"></use></svg></button>
+    <button class="wc close" id="auth-close" title="Cerrar"><svg width="14" height="14"><use href="#i-close"></use></svg></button>
+  </div>
+  <div class="auth-wrap">
+    <div class="auth-brand">
+      <svg width="44" height="44"><use href="#i-py"></use></svg>
+      <div>
+        <h1>Python Classroom</h1>
+        <p id="auth-tagline">Aprende Python sin conexion</p>
+      </div>
+    </div>
+    <div class="auth-card" id="auth-card"></div>
+    <p class="auth-foot" id="auth-foot"></p>
+  </div>
+</div>
+
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#12151c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Python Classroom">
+  <title>Python Classroom</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icono-192.png">
+
+  <!-- Los mismos estilos que la aplicación de escritorio, para que sea la misma app. -->
+  <link rel="stylesheet" href="../src/css/variables.css">
+  <link rel="stylesheet" href="../src/css/reset.css">
+  <link rel="stylesheet" href="../src/css/components.css">
+  <link rel="stylesheet" href="../src/css/dashboard.css">
+  <link rel="stylesheet" href="css/mobile.css">
+</head>
+<body class="movil">
+
+<!-- ==================================================== sprite de iconos -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-py" viewBox="0 0 24 24"><path d="M11.9 2c-1.8 0-3.3.3-4.3.8C6.4 3.4 6 4.4 6 5.6V8h6v.8H4.9c-1.3 0-2.4.8-2.8 2.2-.4 1.6-.4 2.6 0 4.2.3 1.3 1.1 2.2 2.4 2.2H6v-2.6c0-1.5 1.3-2.8 2.9-2.8h4.9c1.2 0 2.2-1 2.2-2.2V5.6c0-1.2-1-2.1-2.2-2.3-.8-.2-1.6-.3-2.4-.3zM9.4 4.4c.5 0 .9.4.9.9s-.4.9-.9.9-.9-.4-.9-.9.4-.9.9-.9z" fill="#4b8bf5" stroke="none"/><path d="M12.1 22c1.8 0 3.3-.3 4.3-.8 1.2-.6 1.6-1.6 1.6-2.8V16h-6v-.8h7.1c1.3 0 2.4-.8 2.8-2.2.4-1.6.4-2.6 0-4.2-.3-1.3-1.1-2.2-2.4-2.2H18v2.6c0 1.5-1.3 2.8-2.9 2.8h-4.9c-1.2 0-2.2 1-2.2 2.2v3.2c0 1.2 1 2.1 2.2 2.3.8.2 1.6.3 2.4.3zm2.5-2.4c-.5 0-.9-.4-.9-.9s.4-.9.9-.9.9.4.9.9-.4.9-.9.9z" fill="#ffd43b" stroke="none"/></symbol>
+    <symbol id="i-tasks" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h10M9 12h10M9 19h10"/><path d="M4 5l1.2 1.2L7.5 3.8M4 12l1.2 1.2L7.5 10.8M4 19l1.2 1.2L7.5 17.8"/></symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.3l2.6 2.6L16 9.5"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8L12 3.5z"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0115 0"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10" width="15" height="10.5" rx="2"/><path d="M8 10V7.5a4 4 0 018 0V10"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5L12 13l8.5-6.5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 20H6a2 2 0 01-2-2V6a2 2 0 012-2h8"/><path d="M17 15l4-3-4-3M21 12H10"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 10-2.3 6.3"/><path d="M20 5v6h-6"/></symbol>
+    <symbol id="i-graduation" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l10 4.5-10 4.5L2 8.5 12 4z"/><path d="M6 10.7V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-5.3"/></symbol>
+  </defs>
+</svg>
+
+<!-- ============================================================ acceso -->
+<section class="m-auth" id="m-auth" hidden>
+  <div class="m-auth-card" id="m-auth-card"></div>
+</section>
+
+<!-- =========================================================== cargando -->
+<section class="m-splash" id="m-splash">
+  <svg width="46" height="46"><use href="#i-py"></use></svg>
+  <b>Python Classroom</b>
+  <span id="m-splash-texto">Conectando…</span>
+</section>
+
+<!-- ================================================================ app -->
+<div class="m-app" id="m-app" hidden>
+  <header class="m-top" id="m-top">
+    <button class="m-back" id="m-back" hidden aria-label="Volver">
+      <svg width="18" height="18"><use href="#i-arrow-left"></use></svg>
+    </button>
+    <div class="m-top-text">
+      <b id="m-title">Ejercicios</b>
+      <span id="m-sub"></span>
+    </div>
+    <button class="m-icon" id="m-refresh" aria-label="Actualizar">
+      <svg width="17" height="17"><use href="#i-refresh"></use></svg>
+    </button>
+  </header>
+
+  <main class="m-body" id="m-body"></main>
+
+  <nav class="m-tabs" id="m-tabs">
+    <button data-tab="ejercicios" class="active">
+      <svg width="20" height="20"><use href="#i-tasks"></use></svg><span>Ejercicios</span>
+    </button>
+    <button data-tab="entregas">
+      <svg width="20" height="20"><use href="#i-check-circle"></use></svg><span>Entregas</span>
+    </button>
+    <button data-tab="ranking">
+      <svg width="20" height="20"><use href="#i-chart"></use></svg><span>Ranking</span>
+    </button>
+    <button data-tab="insignias">
+      <svg width="20" height="20"><use href="#i-star"></use></svg><span>Insignias</span>
+    </button>
+    <button data-tab="yo">
+      <svg width="20" height="20"><use href="#i-user"></use></svg><span>Yo</span>
+    </button>
+  </nav>
+</div>
+
+<div id="toast-root" class="toast-root"></div>
+<div id="modal-root"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

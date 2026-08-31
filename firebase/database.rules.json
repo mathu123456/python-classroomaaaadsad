@@ -1,0 +1,391 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "config": {
+      ".read": "auth != null",
+      "lastChange": {
+        ".write": "root.child('roles').child(auth.uid).val() === 'teacher'",
+        ".validate": "newData.isString()"
+      },
+      "bootstrap": {
+        ".read": "auth != null",
+        ".write": "auth != null && !data.exists() && newData.val() === auth.uid",
+        ".validate": "newData.isString()"
+      }
+    },
+    "roles": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && ( ( $uid === auth.uid && !data.exists() && newData.val() === 'student' ) || ( $uid === auth.uid && !data.exists() && newData.val() === 'teacher' && root.child('config').child('bootstrap').val() === auth.uid ) || root.child('roles').child(auth.uid).val() === 'teacher' )",
+        ".validate": "newData.isString() && (newData.val() === 'teacher' || newData.val() === 'student')"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && $uid === auth.uid",
+        ".write": "auth != null && $uid === auth.uid",
+        ".validate": "newData.hasChildren(['email'])",
+        "email": {
+          ".validate": "newData.isString() && newData.val().length <= 190"
+        },
+        "firstName": {
+          ".validate": "newData.isString() && newData.val().length <= 60"
+        },
+        "lastName": {
+          ".validate": "newData.isString() && newData.val().length <= 60"
+        },
+        "grade": {
+          ".validate": "newData.isString() && newData.val().length <= 20"
+        },
+        "groupName": {
+          ".validate": "newData.isString() && newData.val().length <= 20"
+        },
+        "color": {
+          ".validate": "newData.isString()"
+        },
+        "active": {
+          ".validate": "newData.isBoolean()"
+        },
+        "createdAt": {
+          ".validate": "newData.isString()"
+        },
+        "updatedAt": {
+          ".validate": "newData.isString()"
+        },
+        "lastLoginAt": {
+          ".validate": "newData.isString()"
+        },
+        "lastSeenAt": {
+          ".validate": "newData.isString()"
+        },
+        "teacherRequestedAt": {
+          ".validate": "newData.isString()"
+        },
+        "teacherRequestedCourseId": {
+          ".validate": "newData.isString()"
+        },
+        "role": {
+          ".validate": false
+        },
+        "xp": {
+          ".validate": false
+        },
+        "photoURL": {
+          ".validate": "newData.isString() && newData.val().length <= 400 && newData.val().beginsWith('https://res.cloudinary.com/')"
+        },
+        "$otro": {
+          ".validate": false
+        }
+      }
+    },
+    "userSignals": {
+      "$uid": {
+        ".read": "auth != null && $uid === auth.uid",
+        ".write": "auth != null && ( $uid === auth.uid || root.child('roles').child(auth.uid).val() === 'teacher' )",
+        ".validate": "newData.isString()"
+      }
+    },
+    "topics": {
+      ".read": "auth != null",
+      ".write": "root.child('roles').child(auth.uid).val() === 'teacher'",
+      "$id": {
+        ".validate": "newData.hasChildren(['name'])",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length <= 60"
+        }
+      }
+    },
+    "badges": {
+      ".read": "auth != null",
+      ".write": "root.child('roles').child(auth.uid).val() === 'teacher'",
+      "$id": {
+        ".validate": "newData.hasChildren(['name'])",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length <= 60"
+        },
+        "description": {
+          ".validate": "newData.isString() && newData.val().length <= 300"
+        },
+        "icon": {
+          ".validate": "newData.isString() && newData.val().length <= 30"
+        },
+        "color": {
+          ".validate": "newData.isString() && newData.val().length <= 20"
+        },
+        "type": {
+          ".validate": "newData.isString() && (newData.val() === 'auto' || newData.val() === 'manual')"
+        },
+        "xpBonus": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"
+        },
+        "active": {
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    },
+    "rewards": {
+      ".read": "auth != null",
+      ".write": "root.child('roles').child(auth.uid).val() === 'teacher'",
+      "$id": {
+        ".validate": "newData.hasChildren(['scope'])",
+        "scope": {
+          ".validate": "newData.isString() && (newData.val() === 'global' || newData.val() === 'topic' || newData.val() === 'challenge')"
+        },
+        "position": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 3"
+        },
+        "title": {
+          ".validate": "newData.isString() && newData.val().length <= 120"
+        },
+        "active": {
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    },
+    "courseCodes": {
+      ".read": "auth != null",
+      "$code": {
+        ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'teacher' && root.child('courses').child(newData.val()).child('teacherId').val() === auth.uid && !data.exists()",
+        ".validate": "newData.isString()"
+      }
+    },
+    "courses": {
+      "$courseId": {
+        ".read": "auth != null && ( data.child('teacherId').val() === auth.uid || data.child('members').child(auth.uid).exists() )",
+        ".write": "auth != null && data.exists() && data.child('teacherId').val() === auth.uid",
+        "teacherId": {
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'teacher' && ( ( !data.exists() && newData.val() === auth.uid ) || newData.val() === data.val() )"
+        },
+        "name": {
+          ".write": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid",
+          ".validate": "newData.isString() && newData.val().length <= 80"
+        },
+        "accessCode": {
+          ".write": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid",
+          ".validate": "newData.isString() && newData.val().length <= 10"
+        },
+        "status": {
+          ".write": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid",
+          ".validate": "newData.isString() && (newData.val() === 'active' || newData.val() === 'archived')"
+        },
+        "rankingLimit": {
+          ".write": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid",
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 500"
+        },
+        "createdAt": {
+          ".validate": "newData.isString()"
+        },
+        "updatedAt": {
+          ".validate": "newData.isString()"
+        },
+        "members": {
+          "$uid": {
+            ".write": "auth != null && ( ( $uid === auth.uid && !data.exists() && newData.val() === 'student' ) || root.child('courses').child($courseId).child('teacherId').val() === auth.uid )",
+            ".validate": "newData.isString() && (newData.val() === 'student' || newData.val() === 'co_teacher')"
+          }
+        },
+        "roster": {
+          "$uid": {
+            ".read": "auth != null && ( $uid === auth.uid || root.child('courses').child($courseId).child('teacherId').val() === auth.uid || root.child('courses').child($courseId).child('members').child(auth.uid).val() === 'co_teacher' )",
+            ".write": "auth != null && ( $uid === auth.uid || root.child('courses').child($courseId).child('teacherId').val() === auth.uid )",
+            "photoURL": {
+              ".validate": "newData.isString() && newData.val().length <= 400 && newData.val().beginsWith('https://res.cloudinary.com/')"
+            }
+          }
+        },
+        "groups": {
+          ".read": "auth != null && ( root.child('courses').child($courseId).child('teacherId').val() === auth.uid || root.child('courses').child($courseId).child('members').child(auth.uid).exists() )",
+          ".write": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid"
+        },
+        "config": {
+          ".read": "auth != null && ( root.child('courses').child($courseId).child('teacherId').val() === auth.uid || root.child('courses').child($courseId).child('members').child(auth.uid).exists() )",
+          "lastChange": {
+            ".write": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid",
+            ".validate": "newData.isString()"
+          }
+        },
+        "exercises": {
+          ".read": "auth != null && ( root.child('courses').child($courseId).child('teacherId').val() === auth.uid || root.child('courses').child($courseId).child('members').child(auth.uid).exists() )",
+          ".indexOn": [
+            "topicId",
+            "status",
+            "updatedAt"
+          ],
+          ".write": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid",
+          "$id": {
+            ".validate": "newData.hasChildren(['title'])",
+            "title": {
+              ".validate": "newData.isString() && newData.val().length <= 120"
+            },
+            "xp": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"
+            },
+            "maxScore": {
+              ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 100"
+            },
+            "targets": {}
+          }
+        },
+        "classes": {
+          ".read": "auth != null && ( root.child('courses').child($courseId).child('teacherId').val() === auth.uid || root.child('courses').child($courseId).child('members').child(auth.uid).exists() )",
+          ".indexOn": [
+            "status"
+          ],
+          ".write": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid"
+        },
+        "challenges": {
+          ".read": "auth != null && ( root.child('courses').child($courseId).child('teacherId').val() === auth.uid || root.child('courses').child($courseId).child('members').child(auth.uid).exists() )",
+          ".indexOn": [
+            "status",
+            "topicId"
+          ],
+          ".write": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid"
+        },
+        "submissions": {
+          ".indexOn": [
+            "studentId",
+            "exerciseId",
+            "updatedAt",
+            "status"
+          ],
+          ".read": "auth != null && ( root.child('courses').child($courseId).child('teacherId').val() === auth.uid || ( query.orderByChild === 'studentId' && query.equalTo === auth.uid ) )",
+          "$sid": {
+            ".read": "auth != null && ( data.child('studentId').val() === auth.uid || root.child('courses').child($courseId).child('teacherId').val() === auth.uid )",
+            ".write": "auth != null && ( root.child('courses').child($courseId).child('teacherId').val() === auth.uid || ( ( !data.exists() || data.child('studentId').val() === auth.uid ) && newData.child('studentId').val() === auth.uid ) )",
+            ".validate": "newData.hasChildren(['studentId','exerciseId','status']) && ( root.child('courses').child($courseId).child('teacherId').val() === auth.uid || ( ( !data.child('grade').exists() || newData.child('grade').val() === data.child('grade').val() ) && ( !data.child('xpEarned').exists() || newData.child('xpEarned').val() === data.child('xpEarned').val() ) && ( !data.child('teacherComment').exists() || newData.child('teacherComment').val() === data.child('teacherComment').val() ) ) )",
+            "studentId": {
+              ".validate": "newData.isString()"
+            },
+            "exerciseId": {
+              ".validate": "newData.isString()"
+            },
+            "attemptNumber": {
+              ".validate": "newData.isNumber() && newData.val() >= 1"
+            },
+            "code": {
+              ".validate": "newData.isString() && newData.val().length <= 400000"
+            },
+            "status": {
+              ".validate": "newData.isString() && ( root.child('courses').child($courseId).child('teacherId').val() === auth.uid || newData.val() === 'draft' || newData.val() === 'in_progress' || newData.val() === 'submitted' || newData.val() === 'late' || newData.val() === 'abandoned' )"
+            },
+            "grade": {
+              ".validate": "root.child('courses').child($courseId).child('teacherId').val() === auth.uid || newData.val() === data.val()"
+            },
+            "xpEarned": {
+              ".validate": "root.child('courses').child($courseId).child('teacherId').val() === auth.uid || newData.val() === data.val()"
+            },
+            "teacherComment": {
+              ".validate": "root.child('courses').child($courseId).child('teacherId').val() === auth.uid || newData.val() === data.val()"
+            },
+            "gradedAt": {
+              ".validate": "root.child('courses').child($courseId).child('teacherId').val() === auth.uid || newData.val() === data.val()"
+            },
+            "gradedBy": {
+              ".validate": "root.child('courses').child($courseId).child('teacherId').val() === auth.uid || newData.val() === data.val()"
+            },
+            "files": {
+              "$i": {
+                "name": {
+                  ".validate": "newData.isString() && newData.val().length <= 200"
+                },
+                "content": {
+                  ".validate": "newData.isString() && newData.val().length <= 200000"
+                },
+                "bytes": {
+                  ".validate": "newData.isNumber()"
+                },
+                ".validate": "newData.hasChildren(['name'])"
+              }
+            },
+            "entryFile": {
+              ".validate": "newData.isString() && newData.val().length <= 200"
+            }
+          }
+        },
+        "feedback": {
+          "$sid": {
+            ".read": "auth != null && ( root.child('courses').child($courseId).child('teacherId').val() === auth.uid || root.child('courses').child($courseId).child('submissions').child($sid).child('studentId').val() === auth.uid )",
+            ".write": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid",
+            "$fid": {
+              ".validate": "newData.hasChildren(['line','type','message'])",
+              "line": {
+                ".validate": "newData.isNumber() && newData.val() >= 1"
+              },
+              "type": {
+                ".validate": "newData.isString()"
+              },
+              "message": {
+                ".validate": "newData.isString() && newData.val().length <= 2000"
+              },
+              "file": {
+                ".validate": "newData.isString() && newData.val().length <= 200"
+              }
+            }
+          }
+        },
+        "gradeHistory": {
+          "$sid": {
+            ".read": "auth != null && ( root.child('courses').child($courseId).child('teacherId').val() === auth.uid || root.child('courses').child($courseId).child('submissions').child($sid).child('studentId').val() === auth.uid )",
+            ".write": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid"
+          }
+        },
+        "sessionEvents": {
+          "$uid": {
+            ".read": "auth != null && ( $uid === auth.uid || root.child('courses').child($courseId).child('teacherId').val() === auth.uid )",
+            ".write": "auth != null && ( $uid === auth.uid || root.child('courses').child($courseId).child('teacherId').val() === auth.uid )",
+            "$eid": {
+              ".validate": "newData.hasChildren(['type','timestamp'])",
+              "type": {
+                ".validate": "newData.isString() && newData.val().length <= 40"
+              }
+            }
+          }
+        },
+        "studentProgress": {
+          ".read": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid",
+          "$uid": {
+            ".read": "auth != null && ( $uid === auth.uid || root.child('courses').child($courseId).child('teacherId').val() === auth.uid )",
+            ".write": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid"
+          }
+        },
+        "rankings": {
+          ".read": "auth != null && ( root.child('courses').child($courseId).child('teacherId').val() === auth.uid || root.child('courses').child($courseId).child('members').child(auth.uid).exists() )",
+          ".write": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid"
+        },
+        "userBadges": {
+          ".read": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid",
+          "$uid": {
+            ".read": "auth != null && ( $uid === auth.uid || root.child('courses').child($courseId).child('teacherId').val() === auth.uid )",
+            ".write": "auth != null && root.child('courses').child($courseId).child('teacherId').val() === auth.uid",
+            "$badgeId": {
+              ".validate": "newData.hasChildren(['grantedAt']) && root.child('badges').child($badgeId).exists()",
+              "grantedAt": {
+                ".validate": "newData.isString()"
+              },
+              "grantedBy": {
+                ".validate": "newData.isString()"
+              },
+              "reason": {
+                ".validate": "newData.isString() && newData.val().length <= 300"
+              },
+              "studentId": {
+                ".validate": "newData.isString() && newData.val() === $uid"
+              },
+              "badgeId": {
+                ".validate": "newData.isString() && newData.val() === $badgeId"
+              }
+            }
+          }
+        },
+        "submissionSignals": {
+          ".read": "auth != null && ( root.child('courses').child($courseId).child('teacherId').val() === auth.uid || root.child('courses').child($courseId).child('members').child(auth.uid).exists() )",
+          "lastChange": {
+            ".write": "auth != null && root.child('courses').child($courseId).child('members').child(auth.uid).exists()",
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          }
+        }
+      }
+    }
+  }
+}
