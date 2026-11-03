@@ -322,6 +322,13 @@ function listExercises(actor) {
   }
   const cursoId = courses.courseIdFor(actor.uid);
   if (!cursoId) return [];   // sin curso todavia: no hay nada que ver
+  /*
+   * Ojo: esto NO excluye type='challenge' -aunque esa etiqueta exista-,
+   * porque pintarRetosEstudiante (src/js/exercises.js) necesita encontrar el
+   * ejercicio ligado a un reto (challenges.exerciseId) dentro de esta misma
+   * lista para poder abrirlo; la separacion visual de "no aparecer dos veces"
+   * se resuelve en la interfaz (vistaEstudiante), no aqui.
+   */
   return db.all(
     "SELECT * FROM exercises WHERE courseId = ? AND status IN ('published','active') ORDER BY title", [cursoId]
   ).map((r) => exerciseView(r, actor.uid)).filter((exercise) => exercise.disponible);
@@ -487,6 +494,40 @@ function activeClasses(studentUid) {
   const cursoId = courses.courseIdFor(studentUid);
   if (!cursoId) return [];
   return db.all("SELECT * FROM classes WHERE courseId = ? AND status = 'active'", [cursoId]).map(classView);
+}
+
+/**
+ * "Mis clases" del estudiante: la que esta abierta ahora mismo, las que su
+ * profesor ya programo (con horario fijado o todavia sin el) y un puñado de
+ * las que acaban de cerrar.
+ *
+ * activeClasses() de arriba solo sirve para el chequeo de disponibilidad de
+ * un ejercicio "solo en clase" -responde "hay algo abierto AHORA"-. Esta es
+ * para una pantalla que el estudiante puede consultar en cualquier momento,
+ * asi que tambien necesita lo que viene despues y lo que acaba de terminar,
+ * no solo el instante presente.
+ */
+function studentClasses(studentUid) {
+  const cursoId = courses.courseIdFor(studentUid);
+  if (!cursoId) return [];
+
+  const activas = db.all(
+    "SELECT * FROM classes WHERE courseId = ? AND status = 'active'" +
+    ' ORDER BY COALESCE(startTime, createdAt)', [cursoId]).map(classView);
+  const programadas = db.all(
+    "SELECT * FROM classes WHERE courseId = ? AND status = 'scheduled'" +
+    ' ORDER BY COALESCE(startTime, createdAt)', [cursoId]).map(classView);
+  /*
+   * Solo un puñado de las mas recientes: esto no pretende ser un historial
+   * completo del curso -eso ya lo tiene el profesor en "Clases"-, solo que lo
+   * que el estudiante acaba de ver cerrar no desaparezca de golpe de su
+   * propia pantalla.
+   */
+  const cerradas = db.all(
+    "SELECT * FROM classes WHERE courseId = ? AND status = 'closed'" +
+    ' ORDER BY COALESCE(endTime, updatedAt) DESC LIMIT 5', [cursoId]).map(classView);
+
+  return activas.concat(programadas, cerradas);
 }
 
 function saveClass(datos, actorUid) {
@@ -669,6 +710,7 @@ module.exports = {
   classView,
   listClasses,
   activeClasses,
+  studentClasses,
   saveClass,
   setClassStatus,
   deleteClass,

@@ -16,6 +16,7 @@ const users = require('./users');
 const academic = require('./academic');
 const game = require('./gamification');
 const courses = require('./courses');
+const groups = require('./groups');
 
 const ESTADOS = ['draft', 'in_progress', 'submitted', 'under_review', 'graded', 'returned', 'abandoned', 'late'];
 const TIPOS_FEEDBACK = ['error', 'warning', 'suggestion', 'positive', 'question'];
@@ -27,7 +28,7 @@ const CERRADOS = ['graded', 'returned'];
 
 function submissionView(row, opciones) {
   if (!row) return null;
-  const ej = db.get('SELECT title, topicId, xp, maxScore, timeLimit, maxAttempts FROM exercises WHERE id = ?',
+  const ej = db.get('SELECT title, topicId, xp, maxScore, timeLimit, maxAttempts, rubric FROM exercises WHERE id = ?',
     [row.exerciseId]);
   const alumno = db.get('SELECT uid, firstName, lastName, email, grade, groupName, color, photoURL' +
     ' FROM users WHERE uid = ?', [row.studentId]);
@@ -50,6 +51,7 @@ function submissionView(row, opciones) {
     teacherComment: row.teacherComment,
     gradedAt: row.gradedAt,
     gradedBy: row.gradedBy,
+    criteriaScores: db.parseJson(row.criteriaScores, []),
     timeSpentSec: row.timeSpentSec,
     isLate: !!row.isLate,
     classId: row.classId,
@@ -61,7 +63,8 @@ function submissionView(row, opciones) {
       xp: ej.xp,
       maxScore: ej.maxScore,
       timeLimit: ej.timeLimit,
-      maxAttempts: ej.maxAttempts
+      maxAttempts: ej.maxAttempts,
+      rubric: academic.normalizarLista(db.parseJson(ej.rubric, []))
     } : null,
     estudiante: alumno ? {
       uid: alumno.uid,
@@ -78,8 +81,17 @@ function submissionView(row, opciones) {
   if (opciones && opciones.withDetail) {
     out.feedback = listFeedback(row.id);
     out.gradeHistory = listGradeHistory(row.id);
+    /*
+     * 200 en vez de 50: con solo 50, una sesión larga con varios cambios de
+     * ventana (FOCUS_GAINED/FOCUS_LOST en cada uno) podía enterrar bajo puro
+     * ruido de foco los eventos "de control" (salidas, abandono...) más
+     * antiguos de la MISMA entrega, aunque nunca se borraran de la base -se
+     * quedaban simplemente fuera de esta consulta-. La priorización real de
+     * qué mostrar primero se hace en la interfaz (review.js), no aquí:
+     * seguir ordenando por fecha real evita una lista con saltos de tiempo.
+     */
     out.eventos = db.all(
-      'SELECT type, timestamp FROM session_events WHERE submissionId = ? ORDER BY timestamp DESC LIMIT 50',
+      'SELECT type, timestamp FROM session_events WHERE submissionId = ? ORDER BY timestamp DESC LIMIT 200',
       [row.id]);
   }
   return out;
@@ -242,6 +254,7 @@ function remoteSubmission(row) {
   if (row.teacherComment) out.teacherComment = row.teacherComment;
   if (row.gradedAt) out.gradedAt = row.gradedAt;
   if (row.gradedBy) out.gradedBy = row.gradedBy;
+  if (row.criteriaScores) out.criteriaScores = db.parseJson(row.criteriaScores, []);
   return out;
 }
 
@@ -271,7 +284,11 @@ function listForReview(filtro) {
     else if (f.status === 'reviewing') where.push("status = 'under_review'");
     else if (f.status === 'graded') where.push("status IN ('graded','returned')");
     else if (f.status === 'abandoned') where.push("status = 'abandoned'");
-    else if (f.status === 'late') where.push("status = 'late' OR isLate = 1");
+    // Con parentesis: sin ellos, "courseId = ? AND status = 'late' OR isLate = 1"
+    // se evalua como "(courseId = ? AND status = 'late') OR isLate = 1" -el OR
+    // sin encerrar se comia el AND del curso y filtraba entregas tardias de
+    // CUALQUIER curso, no solo del activo. Fuga real entre cursos.
+    else if (f.status === 'late') where.push("(status = 'late' OR isLate = 1)");
     else { where.push('status = ?'); params.push(f.status); }
   } else {
     where.push("status NOT IN ('draft')");
@@ -319,6 +336,27 @@ function setStatus(submissionId, status) {
   return { ok: true, submission: submissionView(actualizado) };
 }
 
+/**
+ * El propio estudiante marca SU intento abierto como abandonado al salir
+ * (botón "Salir" de la sesión). A diferencia de setStatus -de uso exclusivo
+ * del profesor, ver submissions:setStatus- esta función comprueba que la
+ * entrega sea suya y que siga abierta: no tiene sentido "abandonar" algo ya
+ * entregado o calificado, y jamás debe poder tocar la entrega de otro.
+ */
+function abandonByStudent(submissionId, studentUid) {
+  const row = db.get('SELECT * FROM submissions WHERE id = ?', [submissionId]);
+  if (!row) return { ok: false, error: 'La entrega no existe.' };
+  if (row.studentId !== studentUid) return { ok: false, error: 'Esa entrega no es tuya.' };
+  if (ABIERTOS.indexOf(row.status) === -1) return { ok: false, error: 'Ese intento ya no está abierto.' };
+  db.run("UPDATE submissions SET status = 'abandoned', updatedAt = ? WHERE id = ?", [db.nowIso(), submissionId]);
+  logEvent(studentUid, row.exerciseId, submissionId, 'ABANDONED', {});
+  const actualizado = db.get('SELECT * FROM submissions WHERE id = ?', [submissionId]);
+  db.enqueue('submissions', submissionId, 'upsert', remoteSubmission(actualizado));
+  recomputeProgress(studentUid);
+  db.enqueue('studentProgress', studentUid, 'upsert', progressFor(studentUid));
+  return { ok: true, submission: submissionView(actualizado) };
+}
+
 /* ======================================================== calificacion */
 
 /**
@@ -331,6 +369,11 @@ function gradeSubmission(submissionId, datos, teacherUid) {
   const ejRow = db.get('SELECT * FROM exercises WHERE id = ?', [row.exerciseId]);
   const maxScore = row.maxScore != null ? row.maxScore : (ejRow ? ejRow.maxScore : 5);
 
+  // "" y null no son 0: Number('') === 0 pasaría de largo la validación de
+  // abajo y guardaría una nota vacía como si fuera un cero real, sin avisar.
+  if (datos.grade === '' || datos.grade == null) {
+    return { ok: false, errores: { grade: 'Escribe una nota.' } };
+  }
   const nota = Number(datos.grade);
   if (!isFinite(nota) || nota < 0 || nota > maxScore) {
     return { ok: false, errores: { grade: 'La nota debe estar entre 0 y ' + maxScore + '.' } };
@@ -343,6 +386,18 @@ function gradeSubmission(submissionId, datos, teacherUid) {
 
   const teniaNota = row.grade != null;
   const ahora = db.nowIso();
+
+  /*
+   * Puntos por criterio de la rúbrica: antes se calculaban en la interfaz
+   * SOLO para repartir la nota total en el momento, pero nunca se enviaban
+   * al backend ni se guardaban -al reabrir la entrega, los campos volvían a
+   * aparecer vacíos, y el estudiante nunca veía qué criterio cumplió-.
+   */
+  const criteriaScores = Array.isArray(datos.criteriaScores)
+    ? datos.criteriaScores
+      .map((c) => ({ name: users.clean(c && c.name, 120), points: Math.max(0, Number(c && c.points) || 0) }))
+      .filter((c) => c.name)
+    : [];
 
   db.transaction(() => {
     if (teniaNota && (row.grade !== nota || row.xpEarned !== xp)) {
@@ -364,10 +419,11 @@ function gradeSubmission(submissionId, datos, teacherUid) {
     }
     db.run(
       'UPDATE submissions SET grade = ?, xpEarned = ?, teacherComment = ?, status = ?,' +
-      ' gradedAt = ?, gradedBy = ?, maxScore = ?, updatedAt = ? WHERE id = ?',
+      ' gradedAt = ?, gradedBy = ?, maxScore = ?, criteriaScores = ?, updatedAt = ? WHERE id = ?',
       [nota, xp, String(datos.teacherComment || '').slice(0, 4000),
         datos.returnToStudent ? 'returned' : 'graded',
-        ahora, teacherUid, maxScore, ahora, submissionId]);
+        ahora, teacherUid, maxScore, criteriaScores.length ? db.toJson(criteriaScores) : null,
+        ahora, submissionId]);
   });
 
   const actualizado = db.get('SELECT * FROM submissions WHERE id = ?', [submissionId]);
@@ -402,12 +458,22 @@ function listGradeHistory(submissionId) {
 function reopenSubmission(submissionId, motivo, teacherUid) {
   const row = db.get('SELECT * FROM submissions WHERE id = ?', [submissionId]);
   if (!row) return { ok: false, error: 'La entrega no existe.' };
-  db.run("UPDATE submissions SET status = 'in_progress', submittedAt = NULL, updatedAt = ? WHERE id = ?",
+  /*
+   * Sin limpiar grade/xpEarned/gradedAt/gradedBy, la nota y el XP de la
+   * calificación ANTERIOR se quedaban colgados en la misma fila mientras el
+   * estudiante corregía -y recomputeProgress() seguía contando esa entrega
+   * como "ya calificada" con el XP viejo, inflando el ranking hasta que el
+   * profesor volviera a calificarla-.
+   */
+  db.run("UPDATE submissions SET status = 'in_progress', submittedAt = NULL," +
+    ' grade = NULL, xpEarned = 0, gradedAt = NULL, gradedBy = NULL, criteriaScores = NULL, updatedAt = ? WHERE id = ?',
     [db.nowIso(), submissionId]);
   logEvent(row.studentId, row.exerciseId, submissionId, 'REOPENED_BY_TEACHER',
     { motivo: String(motivo || ''), teacherUid });
   const actualizado = db.get('SELECT * FROM submissions WHERE id = ?', [submissionId]);
   db.enqueue('submissions', submissionId, 'upsert', remoteSubmission(actualizado));
+  recomputeProgress(row.studentId);
+  db.enqueue('studentProgress', row.studentId, 'upsert', progressFor(row.studentId));
   return { ok: true, submission: submissionView(actualizado) };
 }
 
@@ -519,9 +585,23 @@ function recomputeProgress(studentUid) {
   // más abajo); con curso, solo cuentan LOS EJERCICIOS DE ESE CURSO -si no,
   // el porcentaje de un tema saldría mal con exercises de otros cursos que
   // comparten el mismo tema del catálogo compartido-.
+  /*
+   * Se filtra ademas por destinatario (groups.visibleParaEstudiante) y se
+   * excluyen los ejercicios de un RETO -tanto los marcados type='challenge'
+   * como cualquier otro que un reto haya enlazado con exerciseId, sea cual
+   * sea su tipo (challenges.exerciseId puede apuntar a un ejercicio normal)-.
+   * Sin esto, dos estudiantes de un mismo curso pero de grupos distintos
+   * veian un denominador ("X/Y") que incluia ejercicios asignados a OTRO
+   * grupo -o a otro estudiante concreto- que jamas aparecian en su propia
+   * lista (academic.listExercises SI aplicaba ese filtro; este calculo,
+   * no), y ademas un reto resuelto contaba como ejercicio de temario
+   * resuelto.
+   */
   const ejercicios = courseId ? db.all(
-    "SELECT id, topicId, xp, maxScore FROM exercises WHERE courseId = ? AND status IN ('published','active','closed')",
-    [courseId]) : [];
+    "SELECT id, topicId, xp, maxScore FROM exercises WHERE courseId = ? AND status IN ('published','active','closed')" +
+    " AND type != 'challenge'" +
+    " AND id NOT IN (SELECT exerciseId FROM challenges WHERE courseId = ? AND exerciseId IS NOT NULL)",
+    [courseId, courseId]).filter((ej) => groups.visibleParaEstudiante(ej.id, studentUid, courseId)) : [];
   const entregas = db.all('SELECT * FROM submissions WHERE studentId = ?', [studentUid]);
 
   const mejorPorEjercicio = new Map();
@@ -707,11 +787,16 @@ function courseSummary() {
     };
   }).sort((a, b) => b.xp - a.xp || a.nombre.localeCompare(b.nombre, 'es'));
 
+  // Los ejercicios de un reto (type='challenge', o cualquiera enlazado por
+  // challenges.exerciseId) no son temario: no deben contar en el KPI
+  // "Ejercicios" del profesor.
   const ex = db.get(
     "SELECT COUNT(*) AS total," +
     " SUM(CASE WHEN status IN ('published','active') THEN 1 ELSE 0 END) AS activos," +
-    " SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) AS borradores FROM exercises WHERE courseId = ?",
-    [cursoId]);
+    " SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) AS borradores FROM exercises" +
+    " WHERE courseId = ? AND type != 'challenge'" +
+    " AND id NOT IN (SELECT exerciseId FROM challenges WHERE courseId = ? AND exerciseId IS NOT NULL)",
+    [cursoId, cursoId]);
 
   return {
     estudiantes: estudiantes.length,
@@ -811,6 +896,7 @@ module.exports = {
   listForReview,
   reviewCounters,
   setStatus,
+  abandonByStudent,
   gradeSubmission,
   listGradeHistory,
   reopenSubmission,

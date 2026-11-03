@@ -566,6 +566,17 @@ function register(ipcMain, ctx) {
     return yo.role === 'teacher' ? academic.listClasses() : academic.activeClasses(yo.uid);
   }));
 
+  /*
+   * "Mis clases" (estudiante): a diferencia de classes:list -que para un
+   * estudiante solo devuelve la clase activa EN ESTE INSTANTE-, aqui tambien
+   * van las programadas y un puñado de las cerradas recientes. requireUser()
+   * y no requireTeacher(): es para cualquiera con sesion, no solo el profesor.
+   */
+  ipcMain.handle('classes:mine', guard(() => {
+    const yo = users.requireUser();
+    return academic.studentClasses(yo.uid);
+  }));
+
   ipcMain.handle('classes:save', guard((datos) => {
     const yo = users.requireTeacher();
     const res = academic.saveClass(datos || {}, yo.uid);
@@ -661,6 +672,19 @@ function register(ipcMain, ctx) {
   ipcMain.handle('submissions:setStatus', guard((id, status) => {
     users.requireTeacher();
     const res = work.setStatus(id, status);
+    if (res.ok) notify('entregas');
+    return res;
+  }));
+
+  /*
+   * El propio estudiante, al pulsar "Salir" de un ejercicio en curso.
+   * Distinto de submissions:setStatus (solo profesor): aquí se comprueba
+   * dueño y que siga abierto, para que nadie pueda tocar la entrega de otro
+   * ni "abandonar" algo que ya fue entregado o calificado.
+   */
+  ipcMain.handle('submissions:abandon', guard((id) => {
+    const yo = users.requireUser();
+    const res = work.abandonByStudent(id, yo.uid);
     if (res.ok) notify('entregas');
     return res;
   }));
@@ -1127,6 +1151,16 @@ function register(ipcMain, ctx) {
     let conservados = 0;
     // Notas que llegan por primera vez: la interfaz las anuncia al estudiante.
     const calificaciones = [];
+    /*
+     * uids de estudiantes cuya fila de submissions se tocó de verdad en este
+     * lote (no los "conservados"). El profesor recibe en cada sincronización
+     * las entregas de TODO su curso -no solo las propias-, así que sin esto
+     * el ranking (que lee el XP agregado de student_progress, no de
+     * submissions.xpEarned directo) se quedaba desactualizado para cualquier
+     * alumno cuya nota llegó por sync en vez de haberse puesto en vivo en
+     * este mismo equipo.
+     */
+    const estudiantesConEntregaTocada = new Set();
 
     /*
      * Nunca se sobrescribe en silencio un cambio local mas reciente
@@ -1342,6 +1376,8 @@ function register(ipcMain, ctx) {
                 r.teacherComment || '', r.status || local.status,
                 r.gradedAt || null, r.gradedBy || null, db.nowIso(), r.id]);
 
+            estudiantesConEntregaTocada.add(local.studentId);
+
             if (notaNueva) {
               const ej = db.get('SELECT title FROM exercises WHERE id = ?', [local.exerciseId]);
               calificaciones.push({
@@ -1379,6 +1415,7 @@ function register(ipcMain, ctx) {
               updatedAt: r.updatedAt || db.nowIso(),
               syncedAt: db.nowIso()
             });
+            estudiantesConEntregaTocada.add(r.studentId);
           }
           aplicados++;
         } else if (entidad === 'badges') {
@@ -1486,7 +1523,10 @@ function register(ipcMain, ctx) {
     });
     if (aplicados) {
       const yo = users.getActiveUid();
-      if (yo) work.recomputeProgress(yo);
+      if (yo) estudiantesConEntregaTocada.add(yo);
+      // Uno por estudiante único, no por entrega: un lote de sincronización
+      // de un profesor puede traer entregas de decenas de alumnos distintos.
+      for (const uid of estudiantesConEntregaTocada) work.recomputeProgress(uid);
       notify('sincronizacion');
     }
     return { ok: true, aplicados, conservados, calificaciones };

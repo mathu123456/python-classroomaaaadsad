@@ -152,7 +152,15 @@ function arrancarTemporizadores() {
   timerTic = setInterval(() => {
     if (!activa) return;
     segundosDesdeGuardado++;
-    if (restanteSeg != null && !bloqueado) {
+    /*
+     * pintarBarra() destruye y reconstruye TODA la barra (incluido el botón
+     * "Entregar", con su propio addEventListener) cada vez que se llama.
+     * En un ejercicio sin límite de tiempo el texto mostrado nunca cambia
+     * tick a tick, así que llamarla cada segundo solo reemplazaba el botón
+     * bajo los dedos del estudiante sin ninguna razón visible.
+     */
+    if (restanteSeg == null) return;
+    if (!bloqueado) {
       restanteSeg = Math.max(0, restanteSeg - 1);
       if (restanteSeg === 0) aplicarTiempoAgotado(false);
     }
@@ -288,6 +296,85 @@ export async function anadirCarpeta() {
   return true;
 }
 
+/**
+ * Sube archivos sueltos (sin carpeta contenedora) al ejercicio.
+ *
+ * Es el mismo dialogo de seleccion multiple que ya usa el profesor para
+ * adjuntar plantillas al crear un ejercicio (fs:openFilesDialog); aqui se
+ * reutiliza tal cual para escribir cada archivo elegido dentro de la carpeta
+ * de trabajo, con window.pc.files.write -el mismo mecanismo con el que esta
+ * misma sesion ya escribe main.py y enunciado.txt al abrir el ejercicio-.
+ */
+export async function subirArchivos() {
+  if (!activa) return false;
+  if (bloqueado) {
+    toast('Este intento ya no admite cambios.', { type: 'warn' });
+    return false;
+  }
+
+  let seleccionados;
+  try {
+    seleccionados = await window.pc.files.openFilesDialog();
+  } catch (err) {
+    toast('No se pudieron leer los archivos elegidos.', { type: 'err', timeout: 7000 });
+    return false;
+  }
+  if (!seleccionados || !seleccionados.length) return false;
+
+  const s = sep(activa.carpeta);
+  const nombresEscritos = [];
+  try {
+    for (const f of seleccionados) {
+      const nombre = String((f && f.name) || '').replace(/[\\/:*?"<>|]/g, '_').trim();
+      if (!nombre) continue;
+      const destino = activa.carpeta + s + nombre;
+      /*
+       * Conflicto de nombre: se pregunta ANTES de sobrescribir. Si el
+       * estudiante dice que no, se omite justo ese archivo y se sigue con los
+       * demas -un "no" a uno no debe cancelar toda la subida-.
+       */
+      if (await window.pc.files.exists(destino)) {
+        const reemplazar = await confirmDialog(
+          'Ya existe "' + nombre + '". ¿Reemplazarlo?',
+          { title: 'Archivo existente', okLabel: 'Reemplazar' });
+        if (!reemplazar) continue;
+      }
+      await window.pc.files.write(destino, f.content || '');
+      nombresEscritos.push(nombre);
+    }
+  } catch (err) {
+    toast('No se pudieron subir los archivos: ' + (err.message || err), { type: 'err', timeout: 7000 });
+    return false;
+  }
+
+  if (!nombresEscritos.length) return false;
+
+  if (hooks.refrescarExplorador) await hooks.refrescarExplorador();
+
+  /*
+   * autoguardar(true) vuelve a recoger TODA la carpeta (recogerLaCarpeta ->
+   * fs:collect), que es donde ya vive LIMITES_CARPETA (60 archivos, 200 KB por
+   * archivo, 1,5 MB en total, solo texto). Asi los archivos sueltos quedan
+   * sujetos a los mismos limites que ya aplica una carpeta importada, sin
+   * duplicar aqui esos numeros: si algo sobra, sale en omitidos igual que en
+   * anadirCarpeta().
+   */
+  await autoguardar(true);
+
+  toast('Se ' + (nombresEscritos.length === 1 ? 'subió 1 archivo' : 'subieron ' + nombresEscritos.length + ' archivos'),
+    { type: 'ok', timeout: 6000 });
+
+  const omitidosPropios = activa.archivos && activa.archivos.omitidos
+    ? activa.archivos.omitidos.filter((o) => nombresEscritos.indexOf(o.name) !== -1)
+    : [];
+  if (omitidosPropios.length) {
+    toast(avisoOmitidos({ omitidos: omitidosPropios }), { type: 'warn', timeout: 8000 });
+  }
+
+  pintarBarra();
+  return true;
+}
+
 /* -------------------------------------------------- control de abandono */
 
 function cablearControlDeAbandono() {
@@ -327,26 +414,65 @@ function advertirAbandono() {
 
 /* -------------------------------------------------------------- entrega */
 
+/**
+ * Borra la carpeta de trabajo, pero solo cuando el intento que se acaba de
+ * usar (entregar o abandonar) deja el ejercicio SIN intentos disponibles: si
+ * maxAttempts es 0 (ilimitados) o todavia quedan intentos, no se toca nada
+ * -la carpeta sigue ahi para el proximo reintento, que es la reutilizacion de
+ * siempre-.
+ *
+ * Va a la papelera del sistema (shell.trashItem detras de fs:delete), nunca a
+ * un borrado definitivo. Un fallo aqui no debe romper el flujo de entregar o
+ * salir, asi que solo se avisa por consola.
+ */
+async function limpiarCarpetaSiAgotoIntentos(ejercicio, attemptNumber, carpeta) {
+  if (!ejercicio.maxAttempts || attemptNumber < ejercicio.maxAttempts) return;
+  try {
+    await window.pc.files.remove(carpeta);
+  } catch (err) {
+    console.warn('[ejercicio] no se pudo borrar la carpeta de trabajo agotada:', err);
+  }
+}
+
+let enviando = false;
+
 export async function entregar() {
-  if (!activa) return false;
+  if (!activa || enviando) return false;
   const ej = activa.exercise;
 
+  /*
+   * dismissible:false porque, sin esto, un clic impaciente FUERA de la caja
+   * (que aparece centrada, lejos del botón "Entregar" de la barra) la
+   * cerraba en silencio sin ningún aviso -devolviendo false aquí, como si no
+   * hubiera pasado nada-. Eso es justo lo que hacía falta pulsar "Entregar"
+   * dos o tres veces antes de que la entrega de verdad se registrara.
+   */
   const ok = await confirmDialog(
     'Vas a entregar «' + ej.title + '». Después no podrás seguir editando este intento.' +
     (ej.maxAttempts ? ' Te quedarán ' + Math.max(0, ej.maxAttempts - activa.submission.attemptNumber) + ' intento(s).' : ''),
-    { title: 'Entregar ejercicio', okLabel: 'Entregar' });
+    { title: 'Entregar ejercicio', okLabel: 'Entregar', dismissible: false });
   if (!ok) return false;
+  if (enviando) return false;   // ya se disparó otra entrega mientras se confirmaba
+  enviando = true;
+  pintarBarra();
 
-  await autoguardar(true);
-  const codigo = hooks.leerCodigo ? hooks.leerCodigo() : activa.submission.code;
-  const recogida = await recogerLaCarpeta();
-  const res = await window.pc.submissions.submit(activa.submissionId, {
-    code: codigo,
-    files: recogida ? recogida.archivos : undefined,
-    entrada: recogida ? recogida.entrada : undefined
-  });
+  let recogida = null;
+  let res;
+  try {
+    await autoguardar(true);
+    const codigo = hooks.leerCodigo ? hooks.leerCodigo() : activa.submission.code;
+    recogida = await recogerLaCarpeta();
+    res = await window.pc.submissions.submit(activa.submissionId, {
+      code: codigo,
+      files: recogida ? recogida.archivos : undefined,
+      entrada: recogida ? recogida.entrada : undefined
+    });
+  } finally {
+    enviando = false;
+  }
   if (!res.ok) {
     toast(res.error, { title: 'No se pudo entregar', type: 'err', timeout: 7000 });
+    pintarBarra();
     return false;
   }
 
@@ -375,6 +501,9 @@ export async function entregar() {
     buttons: [{ label: 'Cerrar', value: 'ok', primary: true }]
   });
 
+  // Limpieza automatica: si esta entrega agoto los intentos, la carpeta ya no se va a reutilizar.
+  await limpiarCarpetaSiAgotoIntentos(ej, activa.submission.attemptNumber, activa.carpeta);
+
   cerrar();
   if (hooks.onEntregado) await hooks.onEntregado(res.submission);
   return true;
@@ -382,10 +511,35 @@ export async function entregar() {
 
 export async function abandonar() {
   if (!activa) return;
+  /*
+   * Antes esto solo registraba un evento de auditoría (EXERCISE_EXIT) y
+   * cerraba la sesión local, dejando la entrega como "en curso" -reanudable
+   * sin que el profesor se enterara de que hubo una salida-. Ahora, con
+   * confirmación de por medio (para que un clic accidental no queme un
+   * intento sin querer), marca el intento como abandonado de verdad: el
+   * profesor lo ve en su bandeja con ese estado.
+   */
+  const ok = await confirmDialog(
+    'Vas a salir de «' + activa.exercise.title + '» sin entregarlo. Este intento quedará marcado como ' +
+    'abandonado y tu profesor lo verá así' +
+    (activa.exercise.maxAttempts
+      ? '. Te quedarán ' + Math.max(0, activa.exercise.maxAttempts - activa.submission.attemptNumber) + ' intento(s).'
+      : ', pero puedes empezar uno nuevo.'),
+    { title: 'Salir del ejercicio', okLabel: 'Salir y marcar abandonado', dismissible: false });
+  if (!ok) return;
+
   await autoguardar(true);
-  await window.pc.events.log({
-    exerciseId: activa.exercise.id, submissionId: activa.submissionId, type: 'EXERCISE_EXIT'
-  }).catch(() => {});
+  const idEntrega = activa.submissionId;
+  const idEjercicio = activa.exercise.id;
+  await window.pc.events.log({ exerciseId: idEjercicio, submissionId: idEntrega, type: 'EXERCISE_EXIT' })
+    .catch(() => {});
+  const res = await window.pc.submissions.abandon(idEntrega).catch((err) => ({ ok: false, error: err.message }));
+  if (!res.ok) {
+    console.warn('[exercise-session] no se pudo marcar el intento como abandonado:', res.error);
+  } else {
+    // Limpieza automatica: solo si el abandono quedo registrado de verdad y ya no quedan intentos.
+    await limpiarCarpetaSiAgotoIntentos(activa.exercise, activa.submission.attemptNumber, activa.carpeta);
+  }
   cerrar();
 }
 
@@ -423,7 +577,17 @@ function pintarBarra() {
     : el('span', { class: 'eb-time' + (critico ? ' critico' : '') + (bloqueado ? ' agotado' : '') },
       icon('clock', 13), ' ' + (bloqueado ? '00:00' : mmss(restanteSeg)));
 
-  barra.append(
+  /*
+   * barra.append(...) es el metodo nativo de DOM, NO el helper el() del
+   * proyecto: el() filtra hijos null/false antes de insertarlos, pero
+   * Element.append() no filtra nada -convierte cualquier argumento no-Node a
+   * texto, y String(null) === 'null'-. Con avisosAbandono en 0 (el caso
+   * normal, se resetea al abrir cada ejercicio) y un solo archivo (también
+   * el caso normal), los dos ternarios de abajo caian consecutivos en null,
+   * y el DOM insertaba dos nodos de texto "null" seguidos: "nullnull" en
+   * pantalla, justo al lado de "Guardado". Se filtra antes de repartir.
+   */
+  barra.append(...[
     el('span', { class: 'eb-badge' }, 'EJERCICIO'),
     el('div', { class: 'eb-title' },
       el('b', null, ej.title),
@@ -448,10 +612,17 @@ function pintarBarra() {
       title: 'Copia una carpeta que ya tengas hecha dentro de este ejercicio.',
       onclick: () => anadirCarpeta()
     }, icon('folder', 12), 'Añadir carpeta'),
+    el('button', {
+      class: 'btn sm outline',
+      title: 'Sube archivos sueltos (sin carpeta) dentro de este ejercicio.',
+      onclick: () => subirArchivos()
+    }, icon('upload', 12), 'Subir archivo(s)'),
     el('button', { class: 'btn sm outline', onclick: () => verEnunciado() }, 'Enunciado'),
-    el('button', { class: 'btn sm outline', onclick: () => abandonar() }, 'Salir'),
-    el('button', { class: 'btn sm success', onclick: () => entregar() }, 'Entregar')
-  );
+    el('button', { class: 'btn sm outline', disabled: enviando, onclick: () => abandonar() }, 'Salir'),
+    el('button', {
+      class: 'btn sm success', disabled: enviando, onclick: () => entregar()
+    }, enviando ? 'Enviando…' : 'Entregar')
+  ].filter((n) => n != null));
 }
 
 async function verEnunciado() {

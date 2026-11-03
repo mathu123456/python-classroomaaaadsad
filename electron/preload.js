@@ -110,6 +110,7 @@ contextBridge.exposeInMainWorld('pc', {
 
   classes: {
     list: () => invoke('classes:list'),
+    mine: () => invoke('classes:mine'),
     save: (datos) => invoke('classes:save', datos),
     setStatus: (id, status) => invoke('classes:setStatus', id, status),
     remove: (id) => invoke('classes:delete', id)
@@ -130,6 +131,7 @@ contextBridge.exposeInMainWorld('pc', {
     review: (filtro) => invoke('submissions:review', filtro),
     counters: () => invoke('submissions:counters'),
     setStatus: (id, status) => invoke('submissions:setStatus', id, status),
+    abandon: (id) => invoke('submissions:abandon', id),
     grade: (id, datos) => invoke('submissions:grade', id, datos),
     reopen: (id, motivo) => invoke('submissions:reopen', id, motivo),
     prepare: (id) => invoke('submissions:prepare', id)

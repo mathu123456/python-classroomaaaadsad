@@ -299,9 +299,27 @@ export async function renderRevision(host) {
   pintarEvaluacion(der, s);
 }
 
+const EVENTOS_DE_CONTROL = ['EXERCISE_EXIT', 'FOCUS_LOST', 'WINDOW_MINIMIZED', 'ABANDONED', 'TIME_UP',
+  'REOPENED_BY_TEACHER', 'SUBMITTED'];
+
 function seccionEventos(s) {
   const eventos = s.eventos || [];
   const salidas = eventos.filter((e) => ['FOCUS_LOST', 'WINDOW_MINIMIZED', 'EXERCISE_EXIT'].indexOf(e.type) !== -1);
+  /*
+   * Antes se mostraban solo los 8 más recientes de la lista completa
+   * -eventos.slice(0, 8)-: con varios cambios de ventana (FOCUS_GAINED en
+   * cada uno, que es ruido) esos 8 podían ser puro ruido reciente,
+   * enterrando las salidas/abandono más antiguas de la MISMA entrega -que
+   * seguían intactas en la base, solo dejaban de mostrarse-. Ahora se
+   * incluyen SIEMPRE los eventos de control más recientes (hasta 8) y,
+   * si sobra espacio, se completa con el resto -todo vuelto a ordenar por
+   * fecha real, para no mostrar una lista con saltos de tiempo raros-.
+   */
+  const importantes = eventos.filter((e) => EVENTOS_DE_CONTROL.indexOf(e.type) !== -1).slice(0, 8);
+  const idsImportantes = new Set(importantes.map((e) => e.timestamp + '|' + e.type));
+  const relleno = eventos.filter((e) => !idsImportantes.has(e.timestamp + '|' + e.type))
+    .slice(0, Math.max(0, 8 - importantes.length));
+  const aMostrar = importantes.concat(relleno).sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
   return el('div', null,
     el('div', { class: 'side-section-title', style: { padding: '10px 0 4px' } }, 'Actividad'),
     salidas.length
@@ -312,7 +330,7 @@ function seccionEventos(s) {
         'Sin salidas del ejercicio registradas.'),
     eventos.length
       ? el('div', { class: 'rev-eventos' },
-        eventos.slice(0, 8).map((e) => el('div', null,
+        aMostrar.map((e) => el('div', null,
           el('span', null, e.type.toLowerCase().replace(/_/g, ' ')),
           el('small', null, formatoFecha(e.timestamp)))))
       : null
@@ -537,14 +555,23 @@ function pintarEvaluacion(host, s) {
     placeholder: 'Excelente trabajo. La lógica está correcta. Debes mejorar la validación de entrada.'
   }, s.teacherComment || '');
 
-  /* --- rubrica: al puntuar criterios se calcula la nota sola --- */
+  /*
+   * --- rubrica: al puntuar criterios se calcula la nota sola ---
+   * Los puntos ya guardados (s.criteriaScores, por nombre de criterio) se
+   * restauran aquí: antes esto SIEMPRE arrancaba vacío -placeholder '0' sin
+   * ningún 'value'-, porque el desglose por criterio nunca se enviaba ni se
+   * guardaba en ningún lado (ver work.js:gradeSubmission).
+   */
   let criterios = null;
   if (rubrica) {
-    criterios = el('div', { class: 'rubrica' });
+    const previos = new Map((s.criteriaScores || []).map((c) => [c.name, c.points]));
+    criterios = el('div', { class: 'rubrica', dataset: { criterios: '1' } });
     for (const c of rubrica) {
+      const previo = previos.get(c.name);
       const inp = el('input', {
         class: 'input crit-p', type: 'number', step: '0.1', min: '0', max: String(c.points),
-        placeholder: '0', dataset: { max: String(c.points) }
+        placeholder: '0', value: previo != null ? String(previo) : '',
+        dataset: { max: String(c.points), nombre: c.name }
       });
       inp.addEventListener('input', () => {
         let total = 0;
@@ -615,12 +642,26 @@ async function exportarEntrega(s) {
 }
 
 async function guardarNota(s, devolver) {
-  const nota = Number($('#rev-nota').value);
+  const notaTexto = $('#rev-nota').value;
+  // "" no es 0: Number('') === 0 pasaba de largo esta validación y guardaba
+  // una nota vacía como si fuera un cero real, sin avisar (el backend ya lo
+  // rechaza también, pero conviene decirlo aquí sin ir y volver).
+  if (notaTexto === '') {
+    toast('Escribe una nota.', { type: 'err' });
+    return;
+  }
+  const nota = Number(notaTexto);
   const maxScore = s.maxScore || (s.ejercicio && s.ejercicio.maxScore) || 5;
   if (!isFinite(nota) || nota < 0 || nota > maxScore) {
     toast('La nota debe estar entre 0 y ' + maxScore + '.', { type: 'err' });
     return;
   }
+  const criteriosHost = $('.rubrica[data-criterios]');
+  const criteriaScores = criteriosHost
+    ? Array.from(criteriosHost.querySelectorAll('.crit-p'))
+      .filter((i) => i.value !== '')
+      .map((i) => ({ name: i.dataset.nombre, points: Number(i.value) || 0 }))
+    : [];
 
   let motivo = null;
   if (s.grade != null && s.grade !== nota) {
@@ -638,7 +679,8 @@ async function guardarNota(s, devolver) {
     xpEarned: Number($('#rev-xp').value) || 0,
     teacherComment: $('#rev-comentario').value,
     returnToStudent: !!devolver,
-    reason: motivo || undefined
+    reason: motivo || undefined,
+    criteriaScores: criteriaScores
   });
 
   if (!res.ok) {
@@ -764,12 +806,33 @@ export async function mostrarResultado(submissionId) {
           ? 'Este intento se cerró sin entregar.'
           : 'Tu profesor revisará tu código. La nota y el XP quedan pendientes.')));
 
+  /*
+   * Antes el desglose por criterio nunca se guardaba, así que no había nada
+   * que mostrar aquí; ahora que sí se persiste (work.js:gradeSubmission),
+   * el estudiante puede ver exactamente qué criterio cumplió.
+   */
+  const criteriosLogrados = s.criteriaScores && s.criteriaScores.length && s.ejercicio && s.ejercicio.rubric
+    ? s.ejercicio.rubric.map((c) => ({
+      nombre: c.name,
+      max: c.points,
+      logrado: (s.criteriaScores.find((cs) => cs.name === c.name) || {}).points
+    }))
+    : [];
+
   const cuerpo = el('div', null,
     cabecera,
     s.teacherComment
       ? el('div', null,
         el('div', { class: 'side-section-title' }, 'Comentario de tu profesor'),
         el('div', { class: 'form-note' }, s.teacherComment))
+      : null,
+    criteriosLogrados.length
+      ? el('div', null,
+        el('div', { class: 'side-section-title' }, 'Criterios'),
+        el('div', { class: 'rubrica' }, criteriosLogrados.map((c) =>
+          el('div', { class: 'crit-row' },
+            el('span', null, c.nombre),
+            el('b', null, (c.logrado == null ? '—' : c.logrado) + ' / ' + c.max)))))
       : null,
     el('div', { class: 'side-section-title' }, 'Comentarios en el código (' + feedback.length + ')'),
     feedback.length

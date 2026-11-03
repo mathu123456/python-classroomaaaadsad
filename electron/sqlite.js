@@ -18,7 +18,7 @@ const crypto = require('crypto');
 const { DatabaseSync } = require('node:sqlite');
 const { app } = require('electron');
 
-const SCHEMA_VERSION = 11;
+const SCHEMA_VERSION = 12;
 
 let db = null;
 let dbPath = null;
@@ -175,6 +175,7 @@ CREATE TABLE IF NOT EXISTS submissions (
   isLate         INTEGER NOT NULL DEFAULT 0,
   classId        TEXT,
   courseId       TEXT,               -- copia del curso del ejercicio: aisla la entrega de otros cursos
+  criteriaScores TEXT,               -- JSON: [{name,points}] puntos por criterio de la rubrica, al calificar
   updatedAt      TEXT NOT NULL,
   syncedAt       TEXT,
   UNIQUE (studentId, exerciseId, attemptNumber)
@@ -461,6 +462,9 @@ const COLUMNAS_NUEVAS = {
   11: [
     ['users', 'teacherRequestedAt', 'TEXT'],
     ['users', 'teacherRequestedCourseId', 'TEXT']
+  ],
+  12: [
+    ['submissions', 'criteriaScores', 'TEXT']
   ]
 };
 
